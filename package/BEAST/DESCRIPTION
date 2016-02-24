@@ -1,0 +1,11 @@
+Package: BEAST
+Title: All functions required to compute the BEAST Estimator.
+Version: 1
+Authors@R: person("Jérémy", "L'Hour", , "jeremy.l.hour@ensae.fr", role = "cre")
+Description: All necessary functions to compute the BEAST estimator of
+     Bléhaut, D'Haulftoeuille, L'Hour and Tsybakov (2016).
+Depends: R (>= 3.1.2)
+License: What license is it under?
+LazyData: true
+Imports:
+	lbfgs

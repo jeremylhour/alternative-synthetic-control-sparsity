@@ -1,0 +1,116 @@
+#' Computes Lasso solution with FISTA
+#'
+#' Computes the Lasso solution using the FISTA method of Beck and Teboulle (2014).
+#' The objective function is given as the mean squared plus lambda times the L1-norm.
+#' Penalty-loadings for each coefficients are allowed.
+#' 
+#' @param betaInit Starting value for the coefficient. SHould be a vector of dim ncol(X). 
+#' @param y vector of the dependent variable, normalizing it is a good idea.
+#' @param X Matrix of Covariates, quicker if normalized.
+#' @param W Vector of weights for each observation in the Least Square Objective.
+#' @param nopen Set of indices of variables that should not be penalized.
+#' @param lambda Overall penalty parameter.
+#' @param psi vector of penalty loadings for each variable.
+#' @param tol Stopping criteion: difference between the value of objective function at two iterations.
+#' @param maxIter Maximal number of iterations for the algorithm.
+#' @param trace if TRUE print algortihm info
+
+
+LassoFISTA <- function(betaInit=rep(0,ncol(X)),y,X,W=rep(1,nrow(X)),
+                       nopen=NULL,lambda, psi=rep(1,ncol(X)),
+                       tol=1e-8,maxIter=1000,trace=F){
+
+  ### Jeremy L Hour
+  ### 15 janvier 2016
+  ### EDITED : 22 fevrier 2016
+
+  # Observation weighting
+  W <- as.vector(W)
+  y <- sqrt(W)*y
+  X <- diag(sqrt(W)) %*% as.matrix(X)
+  
+  # Penalty loadings
+  if(sum(psi<0)>1) stop("Can only use non-negative penalty loadings!")
+  psi <- as.vector(psi)
+  if(length(psi)!=ncol(X)) stop("Size of penalty loadings vector must be of ncol(X).")
+  
+  ### Set Algo. Values
+  eta <- 1/max(2*eigen(t(X)%*%X)$values/nrow(X))
+  theta <- 1
+  thetaO <- theta
+  beta <- betaInit
+  v <- beta
+  cv <- 0
+  
+  k <- 0
+  # START loop
+  repeat{
+    k <- k+1
+    
+    thetaO <- theta
+    theta <- (1+sqrt(1+4*thetaO^2))/2
+    delta <- (1-thetaO)/theta
+    
+    betaO <- beta
+    beta <- prox(v - eta*LeastSqgrad(v,y,X), lambda*eta, psi, nopen)
+    
+    v <- (1-delta)*beta + delta*betaO
+    
+    # Show objective function value
+    if(trace==T & k%%100 == 0){ print(paste("Objective Func. Value at iteration",k,":",LassoObj(beta,y,X,lambda,psi,nopen))) }
+    
+    # Break if diverges
+    if(is.na(LassoObj(beta,y,X,lambda,psi,nopen) - LassoObj(betaO,y,X,lambda,psi,nopen))){
+      cv <- -555
+      print("LassoFISTA did not converge")
+      break
+    } else if(abs(LassoObj(beta,y,X,lambda,psi,nopen) - LassoObj(betaO,y,X,lambda,psi,nopen)) < tol || k > maxIter) break
+    
+  }
+  # END loop
+  
+  if(k > maxIter){
+    print("Reach max. number of iterations reach in Lasso minimization.")
+    cv <- -666
+  } 
+  
+  return(list(beta=beta,
+              lambda=lambda,
+              value=LassoObj(beta,y,X,lambda,psi,nopen),
+              nbIter=k,
+              convergenceFISTA=cv))
+}
+
+
+#################################
+#################################
+### Define auxiliary functions###
+#################################
+#################################
+
+prox <- function(x,lambda,psi,nopen){
+  y <- (abs(x)-lambda)*(abs(x)-lambda*psi > 0) * sign(x)
+  y[nopen] <- x[nopen] # Do not penalize these variables
+  return(y)
+}
+
+LeastSq <- function(mu,y,X){
+  X <- as.matrix(X)
+  return(mean((y - X%*%mu)^2))
+}
+
+LeastSqgrad <- function(mu,y,X){
+  X <- as.matrix(X)
+  df <- as.vector(-2*(t(y - X%*%mu)%*%X) / nrow(X))
+  return(df)
+}
+
+LassoObj <- function(beta,y,X,lambda,psi,nopen){
+  if(length(nopen)>0){
+    psi[nopen]=0
+    f <- LeastSq(beta,y,X) + lambda*sum(psi*abs(beta))
+  } else {
+    f <- LeastSq(beta,y,X) + lambda*sum(psi*abs(beta))
+  }
+  return(f)
+}

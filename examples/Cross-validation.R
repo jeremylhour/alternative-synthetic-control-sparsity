@@ -3,7 +3,7 @@
 ### J L'Hour
 
 ### Set working directory
-setwd("R:/Simulations/R_Code")
+setwd("R:/Simulations/BEAST")
 
 rm(list=ls())
 set.seed(30031987)

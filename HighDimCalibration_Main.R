@@ -3,7 +3,7 @@
 ### J L'Hour
 
 ### Set working directory
-setwd("R:/Simulations/R_Code") # R pour Jeremy, Z pour Marianne
+setwd("R:/Simulations/BEAST") # R pour Jeremy, Z pour Marianne
 
 rm(list=ls())
 set.seed(30031987)

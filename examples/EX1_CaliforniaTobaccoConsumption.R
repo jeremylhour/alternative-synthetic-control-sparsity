@@ -6,8 +6,8 @@
 rm(list=ls())
 
 ### Set working directory
-setwd("R:/Simulations/R_Code")
-#setwd("Z:/Simulations/R_Code")
+setwd("R:/Simulations/BEAST")
+#setwd("Z:/Simulations/BEAST")
 
 ### Load user-defined function
 source("functions/CalibrationLasso.R")

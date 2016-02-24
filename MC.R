@@ -3,7 +3,7 @@
 ### M Blehaut
 
 ### Set working directory
-setwd("Z:/Simulations/R_Code")
+setwd("Z:/Simulations/BEAST")
 # R pour Jeremy, Z pour Marianne
 
 

@@ -3,7 +3,7 @@
 ### 14 janvier 2016
 
 ### Set working directory
-setwd("R:/Simulations/R_Code")
+setwd("R:/Simulations/BEAST")
 
 rm(list=ls())
 set.seed(9081993)

@@ -27,9 +27,9 @@ source("functions/ImmunizedATT.R")
 
 
 ### MC XP
-R <- 100
-Results <- matrix(ncol=7, nrow=R)
-AsySD <- matrix(ncol=7, nrow=R)
+R <- 1000
+Results <- matrix(ncol=9, nrow=R)
+AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
 Weights <- Convergence
 t_start <- Sys.time()
@@ -61,19 +61,26 @@ ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
 LOGIT <- LogitLasso(d,X,c=.6,
                     maxIterPen=5e1,PostLasso=T,trace=F)
 
+### 4 bis. Farrell (2015)
+FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
+                              c=2, nopenset=c(1), RescaleY=F,
+                              maxIterPen=1e4,maxIterLasso=1e3,tolLasso=1e-6,PostLasso=T,trace=T)
+
 ### 5. BCH (2014) Estimate
 BCH <- BCHDoubleSelec(y,d,X,cd=.95,cy=1.1,
                        nopenset=c(1),RescaleY=F,
                       maxIterPen=1e4,maxIterLasso=1e3,tolLasso=1e-6,trace=F)
 
-### 5. Third step: ATT estimation
+### 6. Third step: ATT estimation
 Results[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
                  ImmunizedATT(y,d,X,CAL$betaPL, Immunity=F)$theta,
                  ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$theta,
                  ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$theta,
                  ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta,
                  ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$theta,
-                 BCH$theta)
+                 BCH$theta,
+                 ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
+                 ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta)
 
 AsySD[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,CAL$betaPL, Immunity=F)$sigma,
@@ -81,7 +88,9 @@ AsySD[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$sigma,
-               BCH$sigma)
+               BCH$sigma,
+               ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
+               ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma)
 
 Convergence[r,] <- c(CAL$convergence,
                      ORT_WLS_L$convergence,
@@ -98,7 +107,7 @@ Results <- Results[!is.na(Results[,1]),]
 R <- nrow(Results)
 
 # Draw the charts
-id <- c(mapply(function(x) rep(x,R),1:7))
+id <- c(mapply(function(x) rep(x,R),1:9))
 val <- c(Results)
 data_res <- data.frame(val = val, model = id)
 
@@ -136,9 +145,9 @@ dev.off()
 
 ### Compute bias and RMSE
 StatDisplay <- data.frame()
-StatDisplay[1:7,"bias"] <- 100*apply(Results,2,mean)
-StatDisplay[1:7,"RMSE"]  <- 100*sqrt(apply(Results^2,2,mean))
-StatDisplay[1:7,"AsySD"]  <- apply(AsySD,2,mean)
-StatDisplay[1:7,"ShapiroTest"]  <- apply(Results,2, function(x) shapiro.test(x)$p.value)
-row.names(StatDisplay) <- c("NPILasso","NPIPL","ImmunizedLasso","ImmunizedPL","LogitLasso", "LogitPL", "BCH 2014")
+StatDisplay[1:9,"bias"] <- 100*apply(Results,2,mean)
+StatDisplay[1:9,"RMSE"]  <- 100*sqrt(apply(Results^2,2,mean))
+StatDisplay[1:9,"AsySD"]  <- apply(AsySD,2,mean)
+StatDisplay[1:9,"ShapiroTest"]  <- apply(Results,2, function(x) shapiro.test(x)$p.value)
+row.names(StatDisplay) <- c("NPILasso","NPIPL","ImmunizedLasso","ImmunizedPL","LogitLasso", "LogitPL", "BCH 2014", "Farrell, Lasso", "Farrell, Post-Lasso")
 print(StatDisplay)

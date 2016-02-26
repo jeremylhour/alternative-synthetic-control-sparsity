@@ -8,10 +8,13 @@
 #' @param Rd Desired R-squared for treatment equation.
 #' @param Intercept If TRUE returns an intercept also.
 #' @param rho Correlation coefficients between two adjacent covariates.
+#' @param TreatHeter If TRUE, heterogeneous treatment effect.
+#' 
+#' @return Returns y,d and X necessary data to run Monte Carlo simulations. Also returns paramaters value for a possible check.
 #' 
 #' @author Jeremy Lhour and Marianne Blehaut
 
-DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5){
+DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   
   library("MASS")
   
@@ -23,9 +26,6 @@ DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5){
       Sigma[k,j] <- rho^abs(k-j)
     }
   }
-  
-  ### Treatment effect
-  a <- 0
   
   ### Treatment variable coefficient
   gamma <- rep(0,p)
@@ -47,9 +47,15 @@ DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5){
   
   c <- sqrt((1/t(b)%*%Sigma%*%b)*(Ry/(1-Ry)))
   b <- c*b
-
+  
   X <- mvrnorm(n = n, mu=rep(0,p), Sigma)
   d <- as.numeric(runif(n) < dnorm(X%*%gamma))
+  
+  ### Treatment effect
+  a <- 0
+  if(TreatHeter) a <- X[,sample(1:p,3)]%*%c(.5,.5,.5)
+  a <- a - sum(d*a)/sum(d)
+
   y <- a*d + X%*%b + rnorm(n)
 
   if(Intercept) X <- cbind(rep(1,n),X)
@@ -58,5 +64,6 @@ DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5){
               y=y,
               d=d,
               b=b,
-              g=gamma))
+              g=gamma,
+              ATT=sum(d*a)/sum(d)))
 }

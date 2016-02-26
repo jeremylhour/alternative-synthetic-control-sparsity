@@ -27,7 +27,7 @@ source("functions/ImmunizedATT.R")
 
 
 ### MC XP
-R <- 1000
+R <- 500
 Results <- matrix(ncol=9, nrow=R)
 AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
@@ -38,7 +38,7 @@ for(r in 1:R){
 ### 1. Generate data
 print(paste("MC Iteration nb.",r))
   
-data <- DataSim(n=200,p=200,Ry=.8,Rd=.2)
+data <- DataSim(n=500,p=200,Ry=.8,Rd=.2,TreatHeter=T)
 X <- data$X
 y <- data$y
 d <- data$d
@@ -139,12 +139,14 @@ pdf("plots/PlugInvsImmunizedPostLasso.pdf", width=12, height=4)
 grid.arrange(get.plot(data_res,2,"Naive Plug-In, Post-Lasso", sdBCH), get.plot(data_res,4,"Immunized, Post-Lasso", sdBCH), ncol=2)
 dev.off()
 
-pdf("plots/LogitLasso.pdf", width=12, height=4)
-grid.arrange(get.plot(data_res,5,"IPW Logit, Lasso", sdBCH), get.plot(data_res,6,"IPW Logit, Post-Lasso", sdBCH), ncol=2)
+pdf("plots/LogitFarrell.pdf", width=12, height=12)
+grid.arrange(get.plot(data_res,5,"IPW Logit, Lasso", sdBCH), get.plot(data_res,6,"IPW Logit, Post-Lasso", sdBCH),
+             get.plot(data_res,8,"Farrell, Lasso", sdBCH), get.plot(data_res,9,"Farrell, Post-Lasso", sdBCH),
+             ncol=2,nrow=2)
 dev.off()
 
-pdf("plots/Farrell.pdf", width=12, height=4)
-grid.arrange(get.plot(data_res,8,"Farrell, Lasso", sdBCH), get.plot(data_res,9,"Farrell, Post-Lasso", sdBCH), ncol=2)
+pdf("plots/BCH_Linear.pdf", width=6, height=4)
+plot(get.plot(data_res,7,"BCH 2014", sdBCH))
 dev.off()
 
 ### Compute bias and RMSE

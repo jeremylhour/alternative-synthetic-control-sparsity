@@ -38,7 +38,7 @@ for(r in 1:R){
 ### 1. Generate data
 print(paste("MC Iteration nb.",r))
   
-data <- DataSim(n=500,p=100,Ry=.8,Rd=.2)
+data <- DataSim(n=200,p=200,Ry=.8,Rd=.2)
 X <- data$X
 y <- data$y
 d <- data$d
@@ -141,6 +141,10 @@ dev.off()
 
 pdf("plots/LogitLasso.pdf", width=12, height=4)
 grid.arrange(get.plot(data_res,5,"IPW Logit, Lasso", sdBCH), get.plot(data_res,6,"IPW Logit, Post-Lasso", sdBCH), ncol=2)
+dev.off()
+
+pdf("plots/Farrell.pdf", width=12, height=4)
+grid.arrange(get.plot(data_res,8,"Farrell, Lasso", sdBCH), get.plot(data_res,9,"Farrell, Post-Lasso", sdBCH), ncol=2)
 dev.off()
 
 ### Compute bias and RMSE

@@ -33,6 +33,7 @@ AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
 Weights <- Convergence
 t_start <- Sys.time()
+pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
 ### 1. Generate data
@@ -95,8 +96,12 @@ AsySD[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
 Convergence[r,] <- c(CAL$convergence,
                      ORT_WLS_L$convergence,
                      ORT_WLS_PL$convergence)
+
+setTxtProgressBar(pb, r/R)
+
 }
 
+close(pb)
 print(Sys.time()-t_start)
 
 # Post-simulation treatment

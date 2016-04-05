@@ -27,27 +27,24 @@ source("functions/ImmunizedATT.R")
 
 
 ### MC XP
-R <- 500
+R <- 200
 Results <- matrix(ncol=9, nrow=R)
 AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
-Weights <- Convergence
 t_start <- Sys.time()
 pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
 ### 1. Generate data
-print(paste("MC Iteration nb.",r))
-  
-data <- DataSim(n=500,p=200,Ry=.8,Rd=.2,TreatHeter=T)
+data <- DataSim(n=1000,p=100,Ry=.8,Rd=.2,TreatHeter=T)
 X <- data$X
 y <- data$y
 d <- data$d
 
 ### 2. Calibration part
 CAL <- CalibrationLasso(d,X,c=.7,maxIterPen=5e1,PostLasso=T,trace=F,maxIter=1e6)
-W <- (1-d) * exp(X%*%CAL$betaPL)/sum(d)
-BC <- t(d/sum(d) - W)%*%X
+# W <- (1-d) * exp(X%*%CAL$betaPL)/sum(d)
+# BC <- t(d/sum(d) - W)%*%X
 
 ### 3. Computes the orthogonality parameter, using method WLS Lasso
 ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
@@ -70,7 +67,7 @@ FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
 ### 5. BCH (2014) Estimate
 BCH <- BCHDoubleSelec(y,d,X,cd=.95,cy=1.1,
                        nopenset=c(1),RescaleY=F,
-                      maxIterPen=1e4,maxIterLasso=1e3,tolLasso=1e-6,trace=F)
+                       maxIterPen=1e4,maxIterLasso=1e3,tolLasso=1e-6,trace=F)
 
 ### 6. Third step: ATT estimation
 Results[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,

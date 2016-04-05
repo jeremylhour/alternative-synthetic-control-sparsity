@@ -11,6 +11,8 @@
 #' 
 #' @return theta Immunized ATT estimate.
 #' @return sigma Asymptotic standerd error. 
+#'
+#' @author Jeremy Lhour
 
 ImmunizedATT <- function(y,d,X,beta,mu=rep(0,ncol(X)),Immunity=T){
   

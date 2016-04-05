@@ -2,7 +2,7 @@
 #'
 #' Computes the Lasso solution using the FISTA method of Beck and Teboulle (2014).
 #' The objective function is given as the mean squared plus lambda times the L1-norm.
-#' Penalty-loadings for each coefficients are allowed.
+#' Penalty-loadings for each coefficients are allowed. Last editec: 22 fervier 2016.
 #' 
 #' @param betaInit Starting value for the coefficient. SHould be a vector of dim ncol(X). 
 #' @param y vector of the dependent variable, normalizing it is a good idea.
@@ -13,17 +13,21 @@
 #' @param psi vector of penalty loadings for each variable.
 #' @param tol Stopping criteion: difference between the value of objective function at two iterations.
 #' @param maxIter Maximal number of iterations for the algorithm.
-#' @param trace if TRUE print algortihm info
+#' @param trace if TRUE print algortihm info.
+#' 
+#' @return beta argmin of the function.
+#' @return value Value of the function at argmin.
+#' @return loss Value of mean squared error.
+#' @return l1norm l1-norm of beta.
+#' @return nbIter Number of iterations necessary for convergence.
+#' @return ConvergenceFISTA 0 if convergence, -555 if not.
+#' 
+#' @author Jeremy Lhour
 
 
 LassoFISTA <- function(betaInit=rep(0,ncol(X)),y,X,W=rep(1,nrow(X)),
                        nopen=NULL,lambda, psi=rep(1,ncol(X)),
                        tol=1e-8,maxIter=1000,trace=F){
-
-  ### Jeremy L Hour
-  ### 15 janvier 2016
-  ### EDITED : 22 fevrier 2016
-
   # Observation weighting
   W <- as.vector(W)
   y <- sqrt(W)*y
@@ -43,7 +47,6 @@ LassoFISTA <- function(betaInit=rep(0,ncol(X)),y,X,W=rep(1,nrow(X)),
   cv <- 0
   
   k <- 0
-  # START loop
   repeat{
     k <- k+1
     
@@ -67,16 +70,16 @@ LassoFISTA <- function(betaInit=rep(0,ncol(X)),y,X,W=rep(1,nrow(X)),
     } else if(abs(LassoObj(beta,y,X,lambda,psi,nopen) - LassoObj(betaO,y,X,lambda,psi,nopen)) < tol || k > maxIter) break
     
   }
-  # END loop
   
   if(k > maxIter){
     print("Reach max. number of iterations reach in Lasso minimization.")
-    cv <- -666
+    cv <- -555
   } 
   
   return(list(beta=beta,
-              lambda=lambda,
               value=LassoObj(beta,y,X,lambda,psi,nopen),
+              loss=LeastSq(beta,y,X),
+              l1norm=abs(beta),
               nbIter=k,
               convergenceFISTA=cv))
 }

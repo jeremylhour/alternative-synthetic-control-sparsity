@@ -1,6 +1,6 @@
-#' Function to compute beta, the covariate balancing weights
+#' Function to compute beta, LogitLasso estimate
 #' 
-#' First step of the BEAST estimator. Uses the lbfgs function to perform L1-penalised minimization.
+#' Logit Lasso as in Van de Geer (2008). Uses the lbfgs function to perform L1-penalised minimization.
 #'  A constant must be included as the first column in X.
 #'  Last edited: 11 janvier 2016.
 #' 
@@ -23,13 +23,14 @@
 #' @author Jeremy Lhour
 
 
-CalibrationLasso <- function(d,X,c=1.1,
+LogitLasso <- function(d,X,c=1.1,
                              maxIterPen=100,PostLasso=F,trace=F,maxIter=1000){
   ### Load necessary packages
   library("lbfgs")
  
   ### Setting
-  d <- as.matrix(d)
+  d <- as.vector(d)
+  d_tilde <- d - (1-d)
   X <- as.matrix(X)
   
   n <- nrow(X)
@@ -43,7 +44,7 @@ CalibrationLasso <- function(d,X,c=1.1,
   
   # Penalty loadings: get a preliminary estimator
   beta <- c(log(sum(d)/(sum(1-d))),rep(0,p-1))
-  Psi <- diag(as.vector(sqrt( t((d - exp(X%*%beta)*(1-d))^2) %*% X^2 / n )))
+  Psi <- diag(as.vector(sqrt( t(1/(1+exp(d*(X%*%beta)))^2) %*% X^2 / n )))
   
   # Estimation parameters
   v <- .01 # Stopping rule
@@ -52,14 +53,14 @@ CalibrationLasso <- function(d,X,c=1.1,
   # Lasso estimate
   repeat{
     k <- k+1
-    LassoEstim <- lbfgs(gamma, gammagrad, Psi%*%beta, d=d, X=X%*%solve(Psi),
+    LassoEstim <- lbfgs(Logitloss, Logitlossgrad, Psi%*%beta, d=d_tilde, X=X%*%solve(Psi),
                         orthantwise_c=lambda,orthantwise_start=1,
                         invisible=1)
     beta <- solve(Psi) %*% LassoEstim$par
     
     # Update penalty loadings
     PrePsi <- Psi
-    Psi <- diag(as.vector(sqrt( t((d - exp(X%*%beta)*(1-d))^2) %*% X^2 / n )))
+    Psi <- diag(as.vector(sqrt( t(1/(1+exp(d*(X%*%beta)))^2) %*% X^2 / n )))
     
     if(trace & k%%5==0) print(paste("Max. pen. loading diff at Lasso Iteration nb.",k,":",max(abs(diag(Psi-PrePsi)))))
     if(k > maxIterPen || max(abs(diag(Psi-PrePsi))) < v) break
@@ -72,7 +73,8 @@ CalibrationLasso <- function(d,X,c=1.1,
   ### Second step: Post-Lasso
   betaPL <- rep(0,p)
   if(PostLasso==T){
-    PL <- lbfgs(gamma, gammagrad, beta[SHat], d=d, X=X[,SHat],
+    # PLtest <- glm(d ~ X[,SHat]-1, family = "binomial")
+    PL <- lbfgs(Logitloss, Logitlossgrad, beta[SHat], d=d_tilde, X=X[,SHat],
                 orthantwise_c=0, invisible=1)
     betaPL[SHat] <- PL$par
   }
@@ -104,14 +106,15 @@ CalibrationLasso <- function(d,X,c=1.1,
 ##################################
 ##################################
 
-gamma <- function(beta,d,X){
+Logitloss <- function(beta,d,X){
   X <- as.matrix(X)
-  f <- (1-d)*exp(X%*%beta) - d * (X%*%beta)                                                                       
+  f <- log(1+exp(-d*(X%*%beta)))                                                                      
   return(mean(f,na.rm=T))
 }
 
-gammagrad <- function(beta,d,X){
+Logitlossgrad <- function(beta,d,X){
   X <- as.matrix(X)
-  g <- as.vector(( (1-d)*exp(X%*%beta) - d )) * X
-  return(as.vector(apply(g,2,mean,na.rm=T)))
+  f <- d / (1+exp(d*(X%*%beta)))
+  f <- -as.vector(f)*X
+  return(as.vector(apply(f,2,mean,na.rm=T)))
 }

@@ -4,7 +4,7 @@
 #'  A constant must be included as the first column in X.
 #'  Last edited: 19 fevrier 2016.
 #' 
-#' @param y Outcome variable (not normalized).
+#' @param y Outcome variable, not normalized.
 #' @param X Matrix of covariates.
 #' @param beta Calibrating parameter estimate from the first step.
 #' @param method One of "WLSLasso" or "LinearOutcome".  
@@ -24,12 +24,16 @@
 #' @return psi Covariate-specific penalty loadings.
 #' @return nbIter Number of iterations for penalty level estimation.
 #' @return convergence 0 if convergence, -555 if not because of Lasso minimization, -999 if not because of penalty estimation.
+#' 
+#' @seealso \code{\link{LassoFISTA}}
+#' 
+#' @author Jeremy Lhour
 
 
 
 OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
-                        c=1.1, nopenset=c(1), RescaleY=F,
-                        maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=F,trace=F){
+                             c=1.1,nopenset=c(1),RescaleY=F,
+                             maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=F,trace=F){
   
   ### Load user-defined functions
   source("functions/LassoFISTA.R")
@@ -71,7 +75,6 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
   k <- 0
   mu <- rep(0,p)
   
-  # Lasso estimate
   repeat{
     k <- k+1
     
@@ -134,7 +137,5 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
               nbIter=k,
               convergence=cvg,
               psi=Psi
-  ))
-  
-  
+  )) 
 }

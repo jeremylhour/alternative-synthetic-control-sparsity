@@ -28,7 +28,7 @@ source("functions/ImmunizedATT.R")
 
 
 ### MC XP
-R <- 200
+R <- 100
 Results <- matrix(ncol=9, nrow=R)
 AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
@@ -37,7 +37,7 @@ pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
 ### 1. Generate data
-data <- DataSimCauchy(n=1000,p=100,Ry=.8,Rd=.2,TreatHeter=T)
+data <- DataSim(n=200,p=100,Ry=.8,Rd=.2,TreatHeter=T)
 X <- data$X
 y <- data$y
 d <- data$d

@@ -17,6 +17,7 @@ library("gridExtra")
 
 ### Load user-defined functions
 source("functions/DataSim.R") 
+source("functions/DataSimCauchy.R") 
 source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
 source("functions/LogitLasso.R")
@@ -36,7 +37,7 @@ pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
 ### 1. Generate data
-data <- DataSim(n=1000,p=100,Ry=.8,Rd=.2,TreatHeter=T)
+data <- DataSimCauchy(n=1000,p=100,Ry=.8,Rd=.2,TreatHeter=T)
 X <- data$X
 y <- data$y
 d <- data$d

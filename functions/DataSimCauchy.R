@@ -1,5 +1,5 @@
 #' DGP for Monte-Carlo Experiment
-#' 
+#' Residuals are simulated according to a Cauchy
 #' Last edited: 8 fevrier 2016
 #' 
 #' @param n Sample size.
@@ -14,7 +14,7 @@
 #' 
 #' @author Jeremy Lhour and Marianne Blehaut
 
-DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
+DataSimCauchy <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   
   library("MASS")
   
@@ -49,14 +49,14 @@ DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   b <- c*b
   
   X <- mvrnorm(n = n, mu=rep(0,p), Sigma)
-  d <- as.numeric(runif(n) < pnorm(X%*%gamma))
+  d <- as.numeric(runif(n) < pcauchy(X%*%gamma))
   
   ### Treatment effect
   a <- 0
   if(TreatHeter) a <- X[,sample(1:p,3)]%*%c(.5,.5,.5)
   a <- a - sum(d*a)/sum(d)
 
-  y <- a*d + X%*%b + rnorm(n)
+  y <- a*d + X%*%b + rcauchy(n)
 
   if(Intercept) X <- cbind(rep(1,n),X)
   

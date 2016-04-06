@@ -72,7 +72,7 @@ LassoFISTA <- function(betaInit=rep(0,ncol(X)),y,X,W=rep(1,nrow(X)),
   }
   
   if(k > maxIter){
-    print("Reach max. number of iterations reach in Lasso minimization.")
+    print("Max. number of iterations reach in Lasso minimization.")
     cv <- -555
   } 
   

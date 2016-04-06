@@ -1,7 +1,7 @@
 #' DGP for Monte-Carlo Experiment
-#' Residuals are simulated according to a Cauchy
+#' Other version with non-linear outcome equation
 #' 
-#' Last edited: 5 avril 2016
+#' Last edited: 6 avril 2016
 #' 
 #' @param n Sample size.
 #' @param p Number of Covariates.
@@ -15,7 +15,7 @@
 #' 
 #' @author Jeremy Lhour and Marianne Blehaut
 
-DataSimCauchy <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
+AwkwardDataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   
   library("MASS")
   
@@ -30,14 +30,14 @@ DataSimCauchy <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHete
   
   ### Treatment variable coefficient
   gamma <- rep(0,p)
-    
+  
   for(j in 1:abs(p/2)){
     gamma[j] <- 1*(-1)^(j) / j^2
   }
-    
+  
   ### Outcome equation coefficients
   b <- gamma
-    
+  
   for(j in (abs(p/2)+1):p){
     b[j] <- (-1)^(j+1) / (p-j+1)^2
   }
@@ -50,15 +50,15 @@ DataSimCauchy <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHete
   b <- c*b
   
   X <- mvrnorm(n = n, mu=rep(0,p), Sigma)
-  d <- as.numeric(runif(n) < pcauchy(X%*%gamma))
+  d <- as.numeric(runif(n) < pnorm(X%*%gamma))
   
   ### Treatment effect
   a <- 0
   if(TreatHeter) a <- X[,sample(1:p,3)]%*%c(.5,.5,.5)
   a <- a - sum(d*a)/sum(d)
-
-  y <- a*d + X%*%b + rcauchy(n)
-
+  
+  y <- a*d + perturbation(X%*%b) + rnorm(n)
+  
   if(Intercept) X <- cbind(rep(1,n),X)
   
   return(list(X=X,
@@ -68,3 +68,7 @@ DataSimCauchy <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHete
               g=gamma,
               ATT=sum(d*a)/sum(d)))
 }
+
+
+#### Auxiliary functions
+perturbation <- function(x) x*(1 + .5*sin(x))

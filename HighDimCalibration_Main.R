@@ -18,6 +18,7 @@ library("gridExtra")
 ### Load user-defined functions
 source("functions/DataSim.R") 
 source("functions/DataSimCauchy.R") 
+source("functions/AwkwardDataSim.R") 
 source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
 source("functions/LogitLasso.R")
@@ -28,7 +29,7 @@ source("functions/ImmunizedATT.R")
 
 
 ### MC XP
-R <- 100
+R <- 1000
 Results <- matrix(ncol=9, nrow=R)
 AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
@@ -36,42 +37,42 @@ t_start <- Sys.time()
 pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
-### 1. Generate data
-data <- DataSim(n=200,p=100,Ry=.8,Rd=.2,TreatHeter=T)
-X <- data$X
-y <- data$y
-d <- data$d
+  ### 1. Generate data
+  data <- AwkwardDataSim(n=2000,p=100,Ry=.8,Rd=.2,TreatHeter=T)
+  X <- data$X
+  y <- data$y
+  d <- data$d
 
-### 2. Calibration part
-CAL <- CalibrationLasso(d,X,c=.7,maxIterPen=5e1,PostLasso=T,trace=F,maxIter=1e6)
-# W <- (1-d) * exp(X%*%CAL$betaPL)/sum(d)
-# BC <- t(d/sum(d) - W)%*%X
+  ### 2. Calibration part
+  CAL <- CalibrationLasso(d,X,c=.7,maxIterPen=5e1,PostLasso=T,trace=F,maxIter=1e6)
+  # W <- (1-d) * exp(X%*%CAL$betaPL)/sum(d)
+  # BC <- t(d/sum(d) - W)%*%X
 
-### 3. Computes the orthogonality parameter, using method WLS Lasso
-ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
+  ### 3. Computes the orthogonality parameter, using method WLS Lasso
+  ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
                               c=2, nopenset=c(1), RescaleY=F,
-                              maxIterPen=1e4,maxIterLasso=1e3,tolLasso=1e-6,PostLasso=F,trace=F)
+                              maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
 
-ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
+  ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
                                c=2, nopenset=c(1), RescaleY=F,
-                               maxIterPen=1e4,maxIterLasso=1e3,tolLasso=1e-6,PostLasso=T,trace=F)
+                               maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
 
-### 4. Logit Lasso estimate
-LOGIT <- LogitLasso(d,X,c=.6,
+  ### 4. Logit Lasso estimate
+  LOGIT <- LogitLasso(d,X,c=.6,
                     maxIterPen=5e1,PostLasso=T,trace=F)
 
-### 4 bis. Farrell (2015)
-FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
+  ### 4 bis. Farrell (2015)
+  FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
                               c=2, nopenset=c(1), RescaleY=F,
-                              maxIterPen=1e4,maxIterLasso=1e3,tolLasso=1e-6,PostLasso=T,trace=T)
+                              maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
 
-### 5. BCH (2014) Estimate
-BCH <- BCHDoubleSelec(y,d,X,cd=.95,cy=1.1,
+  ### 5. BCH (2014) Estimate
+  BCH <- BCHDoubleSelec(y,d,X,cd=.95,cy=2,
                        nopenset=c(1),RescaleY=F,
-                       maxIterPen=1e4,maxIterLasso=1e3,tolLasso=1e-6,trace=F)
+                       maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
 
-### 6. Third step: ATT estimation
-Results[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
+  ### 6. Third step: ATT estimation
+  Results[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
                  ImmunizedATT(y,d,X,CAL$betaPL, Immunity=F)$theta,
                  ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$theta,
                  ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$theta,
@@ -81,7 +82,7 @@ Results[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
                  ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
                  ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta)
 
-AsySD[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
+  AsySD[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,CAL$betaPL, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$sigma,
@@ -91,11 +92,11 @@ AsySD[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma)
 
-Convergence[r,] <- c(CAL$convergence,
+  Convergence[r,] <- c(CAL$convergence,
                      ORT_WLS_L$convergence,
                      ORT_WLS_PL$convergence)
 
-setTxtProgressBar(pb, r/R)
+  setTxtProgressBar(pb, r/R)
 
 }
 
@@ -154,8 +155,8 @@ dev.off()
 
 ### Compute bias and RMSE
 StatDisplay <- data.frame()
-StatDisplay[1:9,"bias"] <- 100*apply(Results,2,mean)
-StatDisplay[1:9,"RMSE"]  <- 100*sqrt(apply(Results^2,2,mean))
+StatDisplay[1:9,"bias"] <- apply(Results,2,mean)
+StatDisplay[1:9,"RMSE"]  <- sqrt(apply(Results^2,2,mean))
 StatDisplay[1:9,"AsySD"]  <- apply(AsySD,2,mean)
 StatDisplay[1:9,"ShapiroTest"]  <- apply(Results,2, function(x) shapiro.test(x)$p.value)
 row.names(StatDisplay) <- c("NPILasso","NPIPL","ImmunizedLasso","ImmunizedPL","LogitLasso", "LogitPL", "BCH 2014", "Farrell, Lasso", "Farrell, Post-Lasso")

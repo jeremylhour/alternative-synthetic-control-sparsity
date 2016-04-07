@@ -1,7 +1,7 @@
 ### Synthetic control example
-### Jeremy L'Hour
+### Jeremy L Hour and Marianne Blehaut
 ### 20 janvier 2016
-
+### Last edited: 7 avril 2016
 
 rm(list=ls())
 
@@ -13,7 +13,6 @@ setwd("R:/Simulations/BEAST")
 source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
 source("functions/ImmunizedATT.R")
-source("functions/ImmunizedATTVariance.R")
 
 ### Load packages
 library("Synth")
@@ -95,10 +94,11 @@ for(t in 1970:2000){
   print(ORT$SHat)
   
   #Computing the quantities of interest
-  ATT[i] <- ImmunizedATT(y,d,X,CAL$betaLasso,ORT$muLasso, Immunity=T)
-  Immunizedsd[i] <- sqrt(ImmunizedATTVariance(y,d,X,CAL$betaLasso,ORT$muLasso, Immunity=T))/sqrt(n)
+  ImmunATT <- ImmunizedATT(y,d,X,CAL$betaLasso,ORT$muLasso, Immunity=T)
+  ATT[i] <- ImmunATT$theta
+  Immunizedsd[i] <- ImmunATT$sigma
   Immunized[i] <- y[d==1] - ATT[i]
-  NaivePlugIn[i] <- y[d==1] - ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)
+  NaivePlugIn[i] <- y[d==1] - ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)$theta
   Naive[i] <- mean(y[d==0])
 }
 

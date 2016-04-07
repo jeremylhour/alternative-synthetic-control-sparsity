@@ -166,7 +166,7 @@ BCHDoubleSelec <- function(y,d,X,cd=1.1,cy=1.1,
   sigma <- sqrt(sigma2/n)
   
   # Return objects
-  return(list(Shaty=SHaty,
+  return(list(SHaty=SHaty,
               SHatd=SHatd,
               theta=coef(DBPostSelec)["d"],
               sigma=sigma,

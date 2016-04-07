@@ -1,4 +1,5 @@
-### Plot to show
+### Plot to show the saprsity patterns in the coefficients
+
 pdf("plots/Coeffsettup.pdf", width=8, height=5)
 plot(gamma, col="olivedrab3", cex=3, pch=16,
      xlab="j",

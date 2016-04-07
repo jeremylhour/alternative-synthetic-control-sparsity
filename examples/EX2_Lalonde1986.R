@@ -22,7 +22,8 @@ library("ggplot2")
 source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
 source("functions/ImmunizedATT.R")
-source("functions/ImmunizedATTVariance.R")
+source("functions/LogitLasso.R")
+source("functions/BCHDoubleSelec.R")
 
 # Load data
 { 
@@ -169,48 +170,68 @@ Results <- data.frame(Estimator=character(),
                       stringsAsFactors=FALSE)
 ### 1. Naive Lasso
 Results[1,"Estimator"] <- c("Naive Plug-In, Lasso")
-Results[1,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)
-Results[1,"asymptoticsd"] <- sqrt(ImmunizedATTVariance(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F))/sqrt(nrow(X))
+Results[1,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)$theta
+Results[1,"asymptoticsd"] <-  ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)$sigma
 Results[1,"PropScore"] <- length(CAL$SHat)
 Results[1,"Outcome"] <- 0
 
 ### 2. Immunized Lasso
 Results[2,"Estimator"] <- c("Immunized, Lasso")
-Results[2,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS$muLasso, Immunity=T)
-Results[2,"asymptoticsd"] <- sqrt(ImmunizedATTVariance(y,d,X,CAL$betaLasso,ORT_WLS$muLasso, Immunity=T))/sqrt(nrow(X))
+Results[2,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS$muLasso, Immunity=T)$theta
+Results[2,"asymptoticsd"] <- ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS$muLasso, Immunity=T)$sigma
 Results[2,"PropScore"] <- length(CAL$SHat)
 Results[2,"Outcome"] <- length(ORT_WLS$SHat)
 
 ### 3. Naive Post-Lasso
 Results[3,"Estimator"] <- c("Naive Plug-In, Post-Lasso")
-Results[3,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaPL,rep(0,p), Immunity=F)
-Results[3,"asymptoticsd"] <- sqrt(ImmunizedATTVariance(y,d,X,CAL$betaPL,rep(0,p), Immunity=F))/sqrt(nrow(X))
+Results[3,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaPL,rep(0,p), Immunity=F)$theta
+Results[3,"asymptoticsd"] <- ImmunizedATT(y,d,X,CAL$betaPL,rep(0,p), Immunity=F)$sigma
 Results[3,"PropScore"] <- length(CAL$SHat)
 Results[3,"Outcome"] <- 0
 
 ### 4. Immunized Post-Lasso
 Results[4,"Estimator"] <- c("Immunized, Post-Lasso")
-Results[4,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)
-Results[4,"asymptoticsd"] <- sqrt(ImmunizedATTVariance(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T))/sqrt(nrow(X))
+Results[4,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$theta
+Results[4,"asymptoticsd"] <- ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$sigma
 Results[4,"PropScore"] <- length(CAL$SHat)
 Results[4,"Outcome"] <- length(ORT_WLS_PL$SHat)
 
 
 ### 6. Other competitors
 
+### Logit Lasso estimate
+LOGIT <- LogitLasso(d,X,c=1.001,
+                    maxIterPen=1e5,PostLasso=T,trace=T,maxIter=1e6)
+
+### Linear Reg for Farrell (2015)
+FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
+                            c=3*sd(y), nopenset=c(1), RescaleY=T,
+                            maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=T,trace=T)
+
 ### Save Farrell (2015)
-Results[5,"Estimator"] <- c("Farrell (2015)")
-Results[5,"ATT"] <- ATT_Farrell
-Results[5,"asymptoticsd"] <- sqrt(Var_Farrell/n)
-Results[5,"PropScore"] <- length(SupportD)
-Results[5,"Outcome"] <- length(SupportY)
+Results[5,"Estimator"] <- c("Farrell (2015), Lasso")
+Results[5,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta
+Results[5,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma
+Results[5,"PropScore"] <- length(LOGIT$SHat)
+Results[5,"Outcome"] <- length(FARRELL$SHat)
+
+Results[6,"Estimator"] <- c("Farrell (2015), Post-Lasso")
+Results[6,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta
+Results[6,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma
+Results[6,"PropScore"] <- length(LOGIT$SHat)
+Results[6,"Outcome"] <- length(FARRELL$SHat)
+
+### BCH 2014
+BCH <- BCHDoubleSelec(y,d,X,cd=2,cy=1.1,
+                      nopenset=c(1),RescaleY=T,
+                      maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=T)
 
 ### Save BCH (2014)
-Results[6,"Estimator"] <- c("BCh (2014)")
-Results[6,"ATT"] <- coef(DBPostSelec)[2]
-Results[6,"asymptoticsd"] <- sqrt(VarBCH/n)
-Results[6,"PropScore"] <- 0
-Results[6,"Outcome"] <- length(OutcomeSet)
+Results[7,"Estimator"] <- c("BCH (2014)")
+Results[7,"ATT"] <- BCH$theta
+Results[7,"asymptoticsd"] <- BCH$sigma
+Results[7,"PropScore"] <- length(BCH$SHatd)
+Results[7,"Outcome"] <- length(BCH$SHaty)
 
 
 
@@ -219,30 +240,25 @@ Results[6,"Outcome"] <- length(OutcomeSet)
 LinReg <- lm(y ~ d + X)
 summary(LinReg)
 
-Results[7,"Estimator"] <- c("OLS")
-Results[7,"ATT"] <- coef(LinReg)[2]
-Results[7,"asymptoticsd"] <- coef(summary(LinReg))["d","Std. Error"]
-Results[7,"PropScore"] <- NA
-Results[7,"Outcome"] <- ncol(X)
+Results[8,"Estimator"] <- c("OLS, full model")
+Results[8,"ATT"] <- coef(LinReg)[2]
+Results[8,"asymptoticsd"] <- coef(summary(LinReg))["d","Std. Error"]
+Results[8,"PropScore"] <- NA
+Results[8,"Outcome"] <- ncol(X)
 
 
 ### 8. Inverse propensity weighting
-PropScoreEst <- multinom(D~X-1, trace=FALSE)$fitted.values
+Results[9,"Estimator"] <- c("IPW, Lasso")
+Results[9,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta
+Results[9,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma
+Results[9,"PropScore"] <- length(LOGIT$SHat)
+Results[9,"Outcome"] <- 0
 
-## Impose common support
-indexes.to.drop <- which(PropScoreEst < min(PropScoreEst[D==1]) | max(PropScoreEst[D==1]) < PropScoreEst)
-if (length(indexes.to.drop)==0) {indexes.to.drop <- n+1}  #R throws a wobbly if [-indexes.to.drop] is negating an empty set. 
-
-
-ATT_NPW <- NPW_ATT(Y[-indexes.to.drop], as.numeric(D[-indexes.to.drop])-1, PropScoreEst[-indexes.to.drop])
-
-mean( (as.numeric(D[-indexes.to.drop])-1)*Y[-indexes.to.drop] / PropScoreEst[-indexes.to.drop])
-
-for(i in 1:7){
-  Results[i,"LB95"] <- Results[i,"ATT"] - 1.96*Results[i,"asymptoticsd"] 
-  Results[i,"UB95"] <- Results[i,"ATT"] + 1.96*Results[i,"asymptoticsd"] 
-}
-
+Results[10,"Estimator"] <- c("IPW, Post-Lasso")
+Results[10,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$theta
+Results[10,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$sigma
+Results[10,"PropScore"] <- length(LOGIT$SHat)
+Results[10,"Outcome"] <- 0
 
 
 

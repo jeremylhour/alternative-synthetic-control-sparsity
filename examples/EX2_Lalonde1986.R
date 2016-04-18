@@ -25,6 +25,14 @@ source("functions/ImmunizedATT.R")
 source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
 
+### min-max scale
+mMscale <- function(X){
+  X <- as.matrix(X)
+  mins <- apply(X,2,min)
+  maxs <- apply(X,2,max)
+  return(scale(X, center=mins, scale=maxs-mins))
+}
+
 # Load data
 { 
   library("causalsens")
@@ -34,14 +42,16 @@ d <- lalonde.psid[,"treat"]
 y <- lalonde.psid[,"re78"]
 
 ### Transformations of the original dataset to have high-dimension data
-### Rescale continuous variables
+### Rescale continuous variables ?
 X.Main <- data.frame("Cons"=1,
                      lalonde.psid[,c("age","education","married","black","hispanic","re74","re75","nodegree")],
                      "NoIncome74"=as.numeric(lalonde.psid[,"re74"]==0),
                      "NoIncome75"=as.numeric(lalonde.psid[,"re75"]==0)
 )
 
+
 # X.Main[,c("age","education","re74","re75")] <- scale(X.Main[,c("age","education","re74","re75")])
+X.Main[,c("age","education","re74","re75")] <- mMscale(X.Main[,c("age","education","re74","re75")])
 
 X.ContInterac <- data.frame(
   "AgexMarried"=lalonde.psid[,"age"]*lalonde.psid[,"married"],
@@ -69,6 +79,7 @@ X.ContInterac <- data.frame(
 )
 
 # X.ContInterac <- scale(X.ContInterac)
+X.ContInterac <- mMscale(X.ContInterac)
 
 X.DumInterac <- data.frame(
   "MarriedxNodegree"=lalonde.psid[,"married"]*lalonde.psid[,"nodegree"],
@@ -88,7 +99,8 @@ X.DumInterac <- data.frame(
 )
 
 X.Poly <- poly(as.matrix(lalonde.psid[,c("age","education","re74","re75")]),degree=5)
-X.Poly <- scale(X.Poly)
+# X.Poly <- scale(X.Poly)
+X.Poly <- mMscale(X.Poly)
 # X.Educ <- model.matrix(~as.factor(lalonde.psid[,"education"] - 1))[,-1]
 X.Age <- model.matrix(~as.factor(lalonde.psid[,"age"]) - 1)[,-1]
 
@@ -151,11 +163,11 @@ dev.off()
 
 ### 3. Computes the orthogonality parameter
 ORT_WLS <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
-                            c=3*sd(y), nopenset=c(1), RescaleY=T,
+                            c=10*sd(y), nopenset=c(1), RescaleY=T,
                             maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=F,trace=T)
 
 ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
-                               c=3*sd(y), nopenset=c(1), RescaleY=T,
+                               c=5*sd(y), nopenset=c(1), RescaleY=T,
                                maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=T,trace=T)
 
 

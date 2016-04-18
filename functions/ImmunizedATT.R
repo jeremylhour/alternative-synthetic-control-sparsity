@@ -1,6 +1,6 @@
 #' Function to compute theta, the Immunized ATT
 #' 
-#' Last edited: 16 fevrier 2016.
+#' Last edited: 18 avril 2016.
 #' 
 #' @param y Outcome variable.
 #' @param d Treatment indicator.
@@ -11,6 +11,7 @@
 #' 
 #' @return theta Immunized ATT estimate.
 #' @return sigma Asymptotic standerd error. 
+#' @return tstat T Statistics for testing null 'theta=0'.
 #'
 #' @author Jeremy Lhour
 
@@ -26,10 +27,17 @@ ImmunizedATT <- function(y,d,X,beta,mu=rep(0,ncol(X)),Immunity=T){
   pi <- mean(d)
   theta <- mean((d - (1-d)*exp(X%*%beta)) * eps)  / pi
   
+  # Compute standard error
   psi <- (d - (1-d)*exp(X%*%beta)) * eps - d*theta
   VAR <- mean(psi^2)/pi^2
   standard_dev <- sqrt(VAR)/sqrt(nrow(X))
   
+  # Compute t-statistics for H_0: 'theta=0'
+  psi_0 <- (d - (1-d)*exp(X%*%beta)) * eps
+  VAR_0 <- mean(psi_0^2)/pi^2
+  tstat <- sqrt(nrow(X)) * theta / sqrt(VAR_0)
+  
   return(list(theta=theta,
-              sigma=standard_dev))
+              sigma=standard_dev,
+              tstat=tstat))
 }

@@ -2,7 +2,7 @@
 #' 
 #' Second step of the BEAST estimator. Uses the LassoFISTA function to perform L1-penalised minimization.
 #'  A constant must be included as the first column in X.
-#'  Last edited: 19 fevrier 2016.
+#'  Last edited: 18 avril 2016.
 #' 
 #' @param y Outcome variable, not normalized.
 #' @param X Matrix of covariates.
@@ -103,7 +103,7 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
   cvg = 0
   if(k > maxIterPen){
     cvg=-999
-    print("Penalty estimation did not converge.")
+    if(trace) print("Penalty estimation did not converge.")
   }
   
   # Obtain the estimates for the unscaled model

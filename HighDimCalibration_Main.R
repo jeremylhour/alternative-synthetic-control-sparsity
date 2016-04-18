@@ -29,7 +29,7 @@ source("functions/ImmunizedATT.R")
 
 
 ### MC XP
-R <- 100
+R <- 1000
 Results <- matrix(ncol=9, nrow=R)
 AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)

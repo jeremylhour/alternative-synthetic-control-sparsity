@@ -14,7 +14,7 @@
 #' 
 #' @author Jeremy Lhour and Marianne Blehaut
 
-DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
+DataSim_noX <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   
   library("MASS")
   
@@ -35,18 +35,12 @@ DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   }
     
   ### Outcome equation coefficients
-  b <- gamma
-    
-  for(j in (abs(p/2)+1):p){
-    b[j] <- (-1)^(j+1) / (p-j+1)^2
-  }
+  b <- rep(0,p)
   
   ### Adjustment to match R.squared
   c <- sqrt((1/t(gamma)%*%Sigma%*%gamma)*(Rd/(1-Rd)))
   gamma <- c*gamma
   
-  c <- sqrt((1/t(b)%*%Sigma%*%b)*(Ry/(1-Ry)))
-  b <- c*b
   
   X <- mvrnorm(n = n, mu=rep(0,p), Sigma)
   d <- as.numeric(runif(n) < pnorm(X%*%gamma))

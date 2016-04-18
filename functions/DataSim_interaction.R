@@ -14,7 +14,7 @@
 #' 
 #' @author Jeremy Lhour and Marianne Blehaut
 
-DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
+DataSim_interaction <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   
   library("MASS")
   
@@ -56,7 +56,7 @@ DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   if(TreatHeter) a <- X%*%rep(10,p)
   a <- a - sum(d*a)/sum(d)
 
-  y <- a*d + X%*%b + rnorm(n)
+  y <- a*d + (X%*%b)*(X%*%b) + rnorm(n)
 
   if(Intercept) X <- cbind(rep(1,n),X)
   

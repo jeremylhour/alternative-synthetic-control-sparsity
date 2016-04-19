@@ -110,7 +110,9 @@ X <- as.matrix(X)
 
 
 ### 2. Calibration part
-CAL <- CalibrationLasso(d,X,c=1.1,maxIterPen=1e4,PostLasso=T,trace=T,maxIter=1e6)
+CAL <- CalibrationLasso(d,X,c=1.1,maxIterPen=1e4,PostLasso=T,trace=T)
+
+# Comments: 19 iterations needed, select 8 variables
 
 # Checking covariate balancing
 # Lasso:
@@ -163,11 +165,11 @@ dev.off()
 
 ### 3. Computes the orthogonality parameter
 ORT_WLS <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
-                            c=10*sd(y), nopenset=c(1), RescaleY=T,
+                            c=1.1, nopenset=c(1), RescaleY=F,
                             maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=F,trace=T)
 
 ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
-                               c=5*sd(y), nopenset=c(1), RescaleY=T,
+                               c=1.1, nopenset=c(1), RescaleY=F,
                                maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=T,trace=T)
 
 
@@ -212,12 +214,12 @@ Results[4,"Outcome"] <- length(ORT_WLS_PL$SHat)
 ### 6. Other competitors
 
 ### Logit Lasso estimate
-LOGIT <- LogitLasso(d,X,c=1.001,
-                    maxIterPen=1e5,PostLasso=T,trace=T,maxIter=1e6)
+LOGIT <- LogitLasso(d,X,c=.6,
+                    maxIterPen=1e5,PostLasso=T,trace=T)
 
 ### Linear Reg for Farrell (2015)
 FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
-                            c=3*sd(y), nopenset=c(1), RescaleY=T,
+                            c=.7*sd(y), nopenset=c(1), RescaleY=T,
                             maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=T,trace=T)
 
 ### Save Farrell (2015)
@@ -233,8 +235,21 @@ Results[6,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immu
 Results[6,"PropScore"] <- length(LOGIT$SHat)
 Results[6,"Outcome"] <- length(FARRELL$SHat)
 
+### 8. Inverse propensity weighting
+Results[9,"Estimator"] <- c("IPW, Lasso")
+Results[9,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta
+Results[9,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma
+Results[9,"PropScore"] <- length(LOGIT$SHat)
+Results[9,"Outcome"] <- 0
+
+Results[10,"Estimator"] <- c("IPW, Post-Lasso")
+Results[10,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$theta
+Results[10,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$sigma
+Results[10,"PropScore"] <- length(LOGIT$SHat)
+Results[10,"Outcome"] <- 0
+
 ### BCH 2014
-BCH <- BCHDoubleSelec(y,d,X,cd=2,cy=1.1,
+BCH <- BCHDoubleSelec(y,d,X,cd=2,cy=1*sd(y),
                       nopenset=c(1),RescaleY=T,
                       maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=T)
 
@@ -259,19 +274,9 @@ Results[8,"PropScore"] <- NA
 Results[8,"Outcome"] <- ncol(X)
 
 
-### 8. Inverse propensity weighting
-Results[9,"Estimator"] <- c("IPW, Lasso")
-Results[9,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta
-Results[9,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma
-Results[9,"PropScore"] <- length(LOGIT$SHat)
-Results[9,"Outcome"] <- 0
-
-Results[10,"Estimator"] <- c("IPW, Post-Lasso")
-Results[10,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$theta
-Results[10,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$sigma
-Results[10,"PropScore"] <- length(LOGIT$SHat)
-Results[10,"Outcome"] <- 0
-
+### Compute confidence interval
+Results["LB95"] <- Results[,"ATT"] - qnorm(.975)*Results[,"asymptoticsd"]
+Results["UB95"] <- Results[,"ATT"] + qnorm(.975)*Results[,"asymptoticsd"]
 
 
 

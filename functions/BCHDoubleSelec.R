@@ -60,7 +60,7 @@ BCHDoubleSelec <- function(y,d,X,cd=1.1,cy=1.1,
   
   # Penalty loadings: get a preliminary estimate
   m_y <- mean(y_tilde)
-  Psi <- as.vector(sqrt( t((y_tilde-m_y)^2) %*% X^2 / n ))
+  Psi <- diag(as.vector(sqrt( t((y_tilde-m_y)^2) %*% X^2 / n )))
   
   # Estimation parameters
   v <- .01 # Stopping rule
@@ -71,21 +71,21 @@ BCHDoubleSelec <- function(y,d,X,cd=1.1,cy=1.1,
     k <- k+1
     
     # Compute Lasso estimate
-    LassoEstim <- LassoFISTA(betaInit=muy,y_tilde,X,W=rep(1,n),
-                             nopen=nopenset,lambda=lambda_tilde,psi=Psi,
+    LassoEstim <- LassoFISTA(betaInit=Psi%*%muy,y_tilde,X%*%solve(Psi),W=rep(1,n),
+                             nopen=nopenset,lambda=lambda_tilde,
                              tol=tolLasso,maxIter=maxIterLasso,trace=F)
-    muy <- LassoEstim$beta
+    muy <- solve(Psi)%*%LassoEstim$beta
     SHaty <- union(1,which(muy != 0)) 
     PostLasso <- lm(y_tilde ~ X[,SHaty]-1)
     e <- PostLasso$residuals
     
     # Update penalty loadings
     PrePsi <- Psi
-    Psi <- as.vector(sqrt( t(e^2) %*% X^2 / n ))
+    Psi <- diag(as.vector(sqrt( t(e^2) %*% X^2 / n )))
     
     # Trace showing
     if(trace & k%%5==0){
-      print(paste("Max. pen. loading diff at Lasso Iteration nb.",k,":",max(abs(Psi-PrePsi)))) 
+      print(paste("Max. pen. loading diff at Lasso Iteration nb.",k,":",max(abs(diag(Psi-PrePsi))))) 
     }
     
     # Stopping rules
@@ -110,7 +110,7 @@ BCHDoubleSelec <- function(y,d,X,cd=1.1,cy=1.1,
   
   # Penalty loadings: get a preliminary estimate
   m_d <- mean(d)
-  Psi <- as.vector(sqrt( t((d-m_d)^2) %*% X^2 / n ))
+  Psi <- diag(as.vector(sqrt( t((d-m_d)^2) %*% X^2 / n )))
   
   # Estimation parameters
   v <- .01 # Stopping rule
@@ -121,21 +121,21 @@ BCHDoubleSelec <- function(y,d,X,cd=1.1,cy=1.1,
     k <- k+1
     
     # Compute Lasso estimate
-    LassoEstim <- LassoFISTA(betaInit=mud,d,X,W=rep(1,n),
-                             nopen=nopenset,lambda=lambda,psi=Psi,
+    LassoEstim <- LassoFISTA(betaInit=Psi%*%mud,d,X%*%solve(Psi),W=rep(1,n),
+                             nopen=nopenset,lambda=lambda,
                              tol=tolLasso,maxIter=maxIterLasso,trace=F)
-    mud <- LassoEstim$beta
+    mud <- solve(Psi)%*%LassoEstim$beta
     SHatd <- union(1,which(mud != 0)) 
     PostLasso <- lm(d ~ X[,SHatd]-1)
     e <- PostLasso$residuals
     
     # Update penalty loadings
     PrePsi <- Psi
-    Psi <- as.vector(sqrt( t(e^2) %*% X^2 / n ))
+    Psi <- diag(as.vector(sqrt( t(e^2) %*% X^2 / n )))
     
     # Trace showing
     if(trace & k%%5==0){
-      print(paste("Max. pen. loading diff at Lasso Iteration nb.",k,":",max(abs(Psi-PrePsi)))) 
+      print(paste("Max. pen. loading diff at Lasso Iteration nb.",k,":",max(abs(diag(Psi-PrePsi))))) 
     }
     
     # Stopping rules

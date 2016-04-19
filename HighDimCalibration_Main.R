@@ -29,7 +29,7 @@ source("functions/ImmunizedATT.R")
 
 
 ### MC XP
-R <- 1000
+R <- 100
 Results <- matrix(ncol=9, nrow=R)
 AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
@@ -38,36 +38,49 @@ pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
   ### 1. Generate data
-  data <- AwkwardDataSim(n=2000,p=100,Ry=.8,Rd=.2,TreatHeter=T)
+  data <- AwkwardDataSim(n=50,p=50,Ry=.8,Rd=.2,TreatHeter=T)
   X <- data$X
   y <- data$y
   d <- data$d
 
   ### 2. Calibration part
-  CAL <- CalibrationLasso(d,X,c=.7,maxIterPen=5e1,PostLasso=T,trace=F,maxIter=1e6)
+  CAL <- CalibrationLasso(d,X,c=.7,maxIterPen=1e4,PostLasso=T,trace=F)
   # W <- (1-d) * exp(X%*%CAL$betaPL)/sum(d)
-  # BC <- t(d/sum(d) - W)%*%X
 
   ### 3. Computes the orthogonality parameter, using method WLS Lasso
   ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
-                              c=2, nopenset=c(1), RescaleY=F,
+                              c=1.1, nopenset=c(1), RescaleY=F,
                               maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
 
-  ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
-                               c=2, nopenset=c(1), RescaleY=F,
-                               maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
+#  ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
+#                               c=1.1, nopenset=c(1), RescaleY=F,
+#                               maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
+  
+  res <- tryCatch({
+    ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
+                                   c=1.1, nopenset=c(1), RescaleY=F,
+                                   maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)   
+  }, warning = function(w) {
+    # log the warning or take other action here
+    print(w)
+  }, error = function(e) {
+    # log the error or take other action here
+    print(e)
+  }, finally = {
+    # this will execute no matter what else happened
+  })
 
   ### 4. Logit Lasso estimate
   LOGIT <- LogitLasso(d,X,c=.6,
-                    maxIterPen=5e1,PostLasso=T,trace=F)
+                    maxIterPen=1e4,PostLasso=T,trace=F)
 
   ### 4 bis. Farrell (2015)
   FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
-                              c=2, nopenset=c(1), RescaleY=F,
-                              maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
+                              c=1.1, nopenset=c(1), RescaleY=F,
+                              maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
 
   ### 5. BCH (2014) Estimate
-  BCH <- BCHDoubleSelec(y,d,X,cd=.95,cy=2,
+  BCH <- BCHDoubleSelec(y,d,X,cd=.95,cy=1.1,
                        nopenset=c(1),RescaleY=F,
                        maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
 
@@ -107,7 +120,8 @@ print(Sys.time()-t_start)
 # Discard all draws which did not converge
 valid <- Convergence[,1] == 0 & Convergence[,2]==0  & Convergence[,3] == 0
 Results <- Results[valid,]
-Results <- Results[!is.na(Results[,1]),]
+Results <- na.omit(Results)
+AsySD <- na.omit(AsySD)
 R <- nrow(Results)
 
 # Draw the charts

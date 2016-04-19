@@ -69,7 +69,7 @@ n <- nrow(X)
 p <- ncol(X)
 
 ### First step: Lasso for Calibration
-CAL <- CalibrationLasso(d,X,c=0.04,maxIterPen=1e4,trace=T,PostLasso=T)
+CAL <- CalibrationLasso(d,X,c=0.02,maxIterPen=1e4,trace=T,PostLasso=T)
 W <- (1-d)*exp(X%*%CAL$betaLasso)/sum(d)
 sum(W)
 
@@ -87,7 +87,7 @@ for(t in 1970:2000){
   y <- data[,varname]
   
   # Estimation
-  ORT <- OrthogonalityReg(y,d,X,beta=CAL$betaLasso, method="WLSLasso",c=2,
+  ORT <- OrthogonalityReg(y,d,X,beta=CAL$betaLasso, method="WLSLasso",c=.5,
                       maxIterPen=1000,nopenset=1,RescaleY=F,
                       maxIterLasso=10e6,PostLasso=F,trace=F)
   print(paste("year ",t," : "))

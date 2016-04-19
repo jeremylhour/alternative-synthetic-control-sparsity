@@ -24,7 +24,7 @@
 
 
 CalibrationLasso <- function(d,X,c=1.1,
-                             maxIterPen=100,PostLasso=F,trace=F,maxIter=1000){
+                             maxIterPen=100,PostLasso=F,trace=F){
   ### Load necessary packages
   library("lbfgs")
  

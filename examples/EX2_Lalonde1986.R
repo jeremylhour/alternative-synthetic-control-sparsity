@@ -279,6 +279,91 @@ Results["LB95"] <- Results[,"ATT"] - qnorm(.975)*Results[,"asymptoticsd"]
 Results["UB95"] <- Results[,"ATT"] + qnorm(.975)*Results[,"asymptoticsd"]
 
 
+################################
+################################
+################################
+# SENSITIVITY TO PENALTY LEVEL #
+################################
+################################
+################################
+
+Yset <- seq(.5,3,by=.2)
+Dset <- seq(.3,2,by=.2)
+
+### 5. Saving results
+Results <- NULL
+
+
+
+for(i in 1:length(Dset)){
+  print(i)
+	CAL <- CalibrationLasso(d,X,c=Dset[i],maxIterPen=1e4,PostLasso=T,trace=F)
+
+    for(j in 1:length(Yset)){
+    print(j)
+    ORT_WLS <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
+                            c=Yset[j], nopenset=c(1), RescaleY=F,
+                            maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=F,trace=F)
+
+### Saving results
+### 1. Naive Lasso
+NaiveLasso <- c(1,
+                ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)$theta,
+                ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)$sigma,
+                Dset[i],
+                Yset[j],
+                length(CAL$SHat),
+                0)
+
+Results <- rbind(Results, NaiveLasso)
+
+ImmunizedLasso <- c(2,
+                    ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS$muLasso, Immunity=T)$theta,
+                    ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS$muLasso, Immunity=T)$sigma,
+                    Dset[i],
+                    Yset[j],
+                    length(CAL$SHat),
+                    length(ORT_WLS$SHat))
+
+Results <- rbind(Results, ImmunizedLasso)
+print(ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS$muLasso, Immunity=T)$theta)
+
+  }
+}
+
+
+res <- data.frame(Results)
+names(res) <- c("BEAST","ATT","AsySD","cd","cy","Sd","Sy")
+res[,"tstat"] <- res[,"ATT"]/res[,"AsySD"]
+
+
+library("reshape")
+ATT.m <- melt(ATT)
+ATT.m[,"Delta.Y"] <- Yset[ATT.m[,1]]
+ATT.m[,"Delta.D"] <- Dset[ATT.m[,2]]
+
+pdf("plots/PenaltyHeatMap_BEAST.pdf", height=10, width=10)
+p <- ggplot(subset(res, BEAST==2), aes(x=cy,y=cd,fill=ATT)) + 
+              geom_tile(aes(fill=ATT), colour="white") +
+              scale_fill_gradient(low = "white", high="steelblue",
+                                  name="ATT estimate") +
+              scale_colour_grey() + theme_bw()
+
+base_size <- 10
+p + theme_bw(base_size = base_size) +
+  labs(x = "Penalty for Outcome regression",y = "Penalty for Propensity Score", size=2) + 
+  theme(legend.position = "right",axis.ticks = element_blank(),
+        axis.text.x = element_text(size = base_size * 1.1, hjust = 0, colour = "grey50"),
+        axis.text.y = element_text(size = base_size * 1.1, hjust = 0, colour = "grey50"),
+        panel.grid.major = element_blank(),panel.grid.minor = element_blank(),
+        panel.border = element_blank())
+dev.off()
+
+
+
+plot(res[res$BEAST==1,"ATT"],res[res$BEAST==2,"ATT"])
+
+
 
 ### 6. CBPS
 library("CBPS")

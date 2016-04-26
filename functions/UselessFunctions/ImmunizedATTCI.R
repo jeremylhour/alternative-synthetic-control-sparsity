@@ -1,5 +1,7 @@
 #' Function to compute theta, the Immunized ATT
 #' 
+#' Return t-stat based on confidence interval
+#' 
 #' Last edited: 18 avril 2016.
 #' 
 #' @param y Outcome variable.
@@ -15,7 +17,7 @@
 #'
 #' @author Jeremy Lhour
 
-ImmunizedATT <- function(y,d,X,beta,mu=rep(0,ncol(X)),Immunity=T){
+ImmunizedATTCI <- function(theta,y,d,X,beta,mu=rep(0,ncol(X)),Immunity=T){
   
   d <- as.matrix(d)
   y <- as.matrix(y)
@@ -25,7 +27,7 @@ ImmunizedATT <- function(y,d,X,beta,mu=rep(0,ncol(X)),Immunity=T){
   if(Immunity) eps <- y - X%*%mu 
   
   pi <- mean(d)
-  theta <- mean((d - (1-d)*exp(X%*%beta)) * eps)  / pi
+  theta_hat <- mean((d - (1-d)*exp(X%*%beta)) * eps)  / pi
   
   # Compute standard error
   psi <- (d - (1-d)*exp(X%*%beta)) * eps - d*theta
@@ -37,7 +39,5 @@ ImmunizedATT <- function(y,d,X,beta,mu=rep(0,ncol(X)),Immunity=T){
   VAR_0 <- mean(psi_0^2)/pi^2
   tstat <- sqrt(nrow(X)) * theta / sqrt(VAR_0)
   
-  return(list(theta=theta,
-              sigma=standard_dev,
-              tstat=tstat))
+  return(list(tstat=(theta_hat-theta)/standard_dev))
 }

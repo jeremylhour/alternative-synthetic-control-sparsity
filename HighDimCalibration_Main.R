@@ -14,11 +14,9 @@ set.seed(30031987)
 ### Load packages
 library("ggplot2")
 library("gridExtra")
+library("MASS")
 
 ### Load user-defined functions
-source("functions/DataSim.R") 
-source("functions/DataSimCauchy.R") 
-source("functions/AwkwardDataSim.R") 
 source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
 source("functions/LogitLasso.R")
@@ -27,9 +25,15 @@ source("functions/VanillaCalibrationLasso.R")
 source("functions/VanillaOrthogonalityReg.R")
 source("functions/ImmunizedATT.R")
 
+# DGP functions
+source("functions/DataSim.R") 
+source("functions/ClassicDataSim.R") 
+source("functions/DataSimCauchy.R") 
+source("functions/AwkwardDataSim.R") 
+
 
 ### MC XP
-R <- 100
+R <- 1000
 Results <- matrix(ncol=9, nrow=R)
 AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
@@ -38,7 +42,7 @@ pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
   ### 1. Generate data
-  data <- AwkwardDataSim(n=50,p=50,Ry=.8,Rd=.2,TreatHeter=T)
+  data <- ClassicDataSim(n=50,p=100,Ry=.8,Rd=.2)
   X <- data$X
   y <- data$y
   d <- data$d
@@ -76,7 +80,7 @@ for(r in 1:R){
 
   ### 4 bis. Farrell (2015)
   FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
-                              c=1.1, nopenset=c(1), RescaleY=F,
+                              c=1.1*sum(1-d)/sum(d), nopenset=c(1), RescaleY=F,
                               maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
 
   ### 5. BCH (2014) Estimate
@@ -168,10 +172,12 @@ plot(get.plot(data_res,7,"BCH 2014", sdBCH))
 dev.off()
 
 ### Compute bias and RMSE
+tstat <- Results/AsySD
 StatDisplay <- data.frame()
 StatDisplay[1:9,"bias"] <- apply(Results,2,mean)
 StatDisplay[1:9,"RMSE"]  <- sqrt(apply(Results^2,2,mean))
 StatDisplay[1:9,"AsySD"]  <- apply(AsySD,2,mean)
 StatDisplay[1:9,"ShapiroTest"]  <- apply(Results,2, function(x) shapiro.test(x)$p.value)
+StatDisplay[1:9,"TypeIerr"] <-  apply(ifelse(abs(tstat) > qnorm(.975),1,0),2, function(x) sum(x)/R)
 row.names(StatDisplay) <- c("NPILasso","NPIPL","ImmunizedLasso","ImmunizedPL","LogitLasso", "LogitPL", "BCH 2014", "Farrell, Lasso", "Farrell, Post-Lasso")
 print(StatDisplay)

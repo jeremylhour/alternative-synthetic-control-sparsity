@@ -2,7 +2,7 @@
 #' 
 #' Second step of the BEAST estimator. Uses the LassoFISTA function to perform L1-penalised minimization.
 #'  A constant must be included as the first column in X.
-#'  Last edited: 19 fevrier 2016.
+#'  Last edited: 18 avril 2016.
 #' 
 #' @param y Outcome variable, not normalized.
 #' @param X Matrix of covariates.
@@ -68,7 +68,7 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
   
   # Penalty loadings: get a preliminary estimate
   m_y <- c(t(W)%*%y_tilde/sum(W))
-  Psi <- as.vector(sqrt( t(W*(y_tilde-m_y)^2) %*% (diag(sqrt(W))%*%X)^2 / n ))
+  Psi <- diag(as.vector(sqrt( t(W*(y_tilde-m_y)^2) %*% (diag(sqrt(W))%*%X)^2 / n )))
   
   # Estimation parameters
   v <- .01 # Stopping rule
@@ -79,18 +79,18 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
     k <- k+1
     
     # Compute Lasso estimate
-    LassoEstim <- LassoFISTA(betaInit=mu,y_tilde,X,W=W,
-                             nopen=nopenset,lambda=lambda_tilde,psi=Psi,
+    LassoEstim <- LassoFISTA(betaInit=Psi%*%mu,y_tilde,X%*%solve(Psi),W=W,
+                             nopen=nopenset,lambda=lambda_tilde,
                              tol=tolLasso,maxIter=maxIterLasso,trace=F)
-    mu <- LassoEstim$beta
+    mu <- solve(Psi)%*%LassoEstim$beta
     
     # Update penalty loadings
     PrePsi <- Psi
-    Psi <- as.vector(sqrt( t(W*(y_tilde-X%*%mu)^2) %*% (diag(sqrt(W))%*%X)^2 / n ))
+    Psi <- diag(as.vector(sqrt( t(W*(y_tilde-X%*%mu)^2) %*% (diag(sqrt(W))%*%X)^2 / n )))
     
     # Trace showing
     if(trace & k%%5==0){
-      print(paste("Max. pen. loading diff at Lasso Iteration nb.",k,":",max(abs(Psi-PrePsi)))) 
+      print(paste("Max. pen. loading diff at Lasso Iteration nb.",k,":",max(abs(diag(Psi-PrePsi))))) 
     }
     
     # Stopping rules
@@ -103,7 +103,7 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
   cvg = 0
   if(k > maxIterPen){
     cvg=-999
-    print("Penalty estimation did not converge.")
+    if(trace) print("Penalty estimation did not converge.")
   }
   
   # Obtain the estimates for the unscaled model
@@ -136,6 +136,6 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
               muLasso=c(muLasso),
               nbIter=k,
               convergence=cvg,
-              psi=Psi
+              psi=diag(Psi)
   )) 
 }

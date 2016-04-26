@@ -7,7 +7,7 @@
 setwd("R:/Simulations/BEAST") # R pour Jeremy, Z pour Marianne
 
 rm(list=ls())
-set.seed(30031987)
+set.seed(12071990)
 
 
 ### 0. Settings
@@ -15,11 +15,9 @@ set.seed(30031987)
 ### Load packages
 library("ggplot2")
 library("gridExtra")
+library("MASS")
 
 ### Load user-defined functions
-source("functions/DataSim.R") 
-source("functions/DataSimCauchy.R") 
-source("functions/AwkwardDataSim.R") 
 source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
 source("functions/LogitLasso.R")
@@ -28,9 +26,12 @@ source("functions/VanillaCalibrationLasso.R")
 source("functions/VanillaOrthogonalityReg.R")
 source("functions/ImmunizedATT.R")
 
+# Data simulation files
+source("functions/ClassicDataSim.R") 
+
 
 ### MC XP FUNCTION
-MonteCarloSimu <- function(Ry=.8,Rd=.2, n=250,p=300, R=500){
+MonteCarloSimu <- function(Ry=.8,Rd=.2, n=250,p=300,R=500){
   Results <- matrix(ncol=3, nrow=R)
   AsySD <- matrix(ncol=3, nrow=R)
   t_start <- Sys.time()
@@ -51,11 +52,11 @@ MonteCarloSimu <- function(Ry=.8,Rd=.2, n=250,p=300, R=500){
                                   c=1.1, nopenset=c(1), RescaleY=F,
                                   maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
-    
-    ### 5. BCH (2014) Estimate
+    ### 4. BCH (2014) Estimate
     BCH <- BCHDoubleSelec(y,d,X,cd=.95,cy=1.1,
                           nopenset=c(1),RescaleY=F,
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
+    
     
     ### 6. Third step: ATT estimation
     Results[r,] <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
@@ -77,34 +78,43 @@ MonteCarloSimu <- function(Ry=.8,Rd=.2, n=250,p=300, R=500){
 
 ### RUN SIMULATIONS
 i <- 0
-j <- 0
 z_BEAST <- matrix(,ncol=10,nrow=10)
 z_NAIF <- matrix(,ncol=10,nrow=10)
 z_BCH <- matrix(,ncol=10,nrow=10)
 
-for(Ry in seq(0,9,by=.1)){
+for(Rd in seq(0,.9,by=.1)){
   i <- i+1
-  print(paste("Ry:",i))
-  for(Rd in seq(0,9,by=.1)){
+  j <- 0
+  print(paste("Rd:",Rd))
+  for(Ry in seq(0,.9,by=.1)){
     j <- j+1
-    print(paste("Rd:",j))
+    print(paste("Ry:",Ry))
     MCX <- MonteCarloSimu(Ry=Ry,Rd=Rd, n=250,p=300,R=500)
     t <- MCX$Results/MCX$AsySD
     z_NAIF[i,j] <- sum(ifelse(abs(t[,1]) > qnorm(.975),1,0))/500
     z_BEAST[i,j] <- sum(ifelse(abs(t[,2]) > qnorm(.975),1,0))/500
     z_BCH[i,j] <- sum(ifelse(abs(t[,3]) > qnorm(.975),1,0))/500
+    print(paste("Naif type I error:",z_NAIF[i,j]))
+    print(paste("BEAST type I error:",z_BEAST[i,j]))
+    print(paste("BCH type I error:",z_BEAST[i,j]))
   }
 }
 
 ### Interval coverage plot
-x=seq(0,9,by=.1)
+x=seq(0,.9,by=.1)
 
 op <- par(bg = "white")
-pdf("Confidence_covering_shape.pdf")
+pdf("plots/Confidence_covering_shape.pdf")
 persp(x,x,z_BEAST,
-      theta=30,
-      phi=20,
+      theta=-60,
+      phi=10,
       expand=0.5,
+      ticktype="detailed",
       col = "steelblue",
+      main="BEAST type I error",
+      xlim=c(0,1),ylim=c(0,1),zlim=c(0,1),
+      xlab="R.2 Selection",
+      ylab="R.2 Outcome",
+      zlab="Type I error"
 )
 dev.off()

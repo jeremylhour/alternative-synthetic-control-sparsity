@@ -1,6 +1,10 @@
 #' DGP for Monte-Carlo Experiment
 #' 
-#' Last edited: 8 fevrier 2016
+#' ClassiDataSim edition with Normal residuals and Logit propscore
+#' Dummy variables are also included in covariates
+#' Needs MASS library to run.
+#' 
+#' Last edited: 26 avril 2014
 #' 
 #' @param n Sample size.
 #' @param p Number of Covariates.
@@ -14,9 +18,7 @@
 #' 
 #' @author Jeremy Lhour and Marianne Blehaut
 
-DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
-  
-  library("MASS")
+ClassicDataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T,rho=.5){
   
   ### Covariate variance matrix
   Sigma <- matrix(0,nrow=p, ncol=p)
@@ -48,13 +50,18 @@ DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   c <- sqrt((1/t(b)%*%Sigma%*%b)*(Ry/(1-Ry)))
   b <- c*b
   
+  ### Generate covariates
   X <- mvrnorm(n = n, mu=rep(0,p), Sigma)
-  d <- as.numeric(runif(n) < pnorm(X%*%gamma))
+  
+  # all even-indexed covariates are dummies
+  even <- 1:p %% 2 == 0
+  X[,even] <- ifelse(X[,even] > 0,1,0)
+  
+  logit <- function(x) 1/(1+exp(-x))
+  d <- as.numeric(runif(n) < logit(X%*%gamma))
   
   ### Treatment effect
   a <- 0
-  if(TreatHeter) a <- X%*%rep(10,p)
-  a <- a - sum(d*a)/sum(d)
 
   y <- a*d + X%*%b + rnorm(n)
 

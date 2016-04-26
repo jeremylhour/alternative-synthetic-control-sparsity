@@ -77,7 +77,7 @@ LassoFISTA <- function(betaInit=rep(0,ncol(X)),y,X,W=rep(1,nrow(X)),
   return(list(beta=as.vector(beta),
               value=LassoObj(beta,y,X,lambda,nopen),
               loss=LeastSq(beta,y,X),
-              l1norm=abs(beta),
+              l1norm=sum(abs(beta)),
               nbIter=k,
               convergenceFISTA=cv))
 }

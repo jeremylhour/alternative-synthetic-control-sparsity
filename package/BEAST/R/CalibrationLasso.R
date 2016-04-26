@@ -2,7 +2,7 @@
 #' 
 #' First step of the BEAST estimator. Uses the lbfgs function to perform L1-penalised minimization.
 #'  A constant must be included as the first column in X.
-#'  Last edited: 11 janvier 2016.
+#'  Last edited: 18 avril 2016.
 #' 
 #' @param d Treatment indicator.
 #' @param X Matrix of covariates.
@@ -24,7 +24,7 @@
 
 
 CalibrationLasso <- function(d,X,c=1.1,
-                             maxIterPen=100,PostLasso=F,trace=F,maxIter=1000){
+                             maxIterPen=100,PostLasso=F,trace=F){
   ### Load necessary packages
   library("lbfgs")
  
@@ -79,8 +79,8 @@ CalibrationLasso <- function(d,X,c=1.1,
   
   
   if(k > maxIterPen){
-    print("Penalty estimation did not converge.")
     cvg=-999
+    if(trace) print("Penalty estimation did not converge.")
   } else {
     cvg=0
   }

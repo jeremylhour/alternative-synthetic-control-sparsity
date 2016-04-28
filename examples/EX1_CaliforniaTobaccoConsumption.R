@@ -87,7 +87,7 @@ for(t in 1970:2000){
   y <- data[,varname]
   
   # Estimation
-  ORT <- OrthogonalityReg(y,d,X,beta=CAL$betaLasso, method="WLSLasso",c=.5,
+  ORT <- OrthogonalityReg(y,d,X,beta=CAL$betaLasso, method="WLSLasso",c=.45,
                       maxIterPen=1000,nopenset=1,RescaleY=F,
                       maxIterLasso=10e6,PostLasso=F,trace=F)
   print(paste("year ",t," : "))

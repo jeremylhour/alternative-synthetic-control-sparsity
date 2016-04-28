@@ -42,7 +42,7 @@ pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
   ### 1. Generate data
-  data <- ClassicDataSim(n=50,p=100,Ry=.8,Rd=.2)
+  data <- ClassicDataSim(n=2000,p=100,Ry=.8,Rd=.2)
   X <- data$X
   y <- data$y
   d <- data$d

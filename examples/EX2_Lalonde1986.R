@@ -279,6 +279,20 @@ Results["LB95"] <- Results[,"ATT"] - qnorm(.975)*Results[,"asymptoticsd"]
 Results["UB95"] <- Results[,"ATT"] + qnorm(.975)*Results[,"asymptoticsd"]
 
 
+
+### Test of the hdm package
+library("hdm")
+
+rY = rlasso(y ~ X)$res
+rD = rlasso(d ~ X)$res
+
+print(rD,all=F)
+
+partial.fit.postlasso= lm(rY~rD)
+summary(partial.fit.postlasso)$coef["rD",1:2]
+
+
+
 ################################
 ################################
 ################################

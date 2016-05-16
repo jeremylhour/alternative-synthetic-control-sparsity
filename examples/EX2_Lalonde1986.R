@@ -222,6 +222,13 @@ FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
                             c=.7*sd(y), nopenset=c(1), RescaleY=T,
                             maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=T,trace=T)
 
+### Pre-selecting the same covariates
+### NOT FAIR TO COMPARE WITH OUR PROCEDURE !!!
+FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
+                            c=.7*sd(y), nopenset=c(1,3,7,8), RescaleY=T,
+                            maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=T,trace=T)
+
+
 ### Save Farrell (2015)
 Results[5,"Estimator"] <- c("Farrell (2015), Lasso")
 Results[5,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta

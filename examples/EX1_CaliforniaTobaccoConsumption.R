@@ -25,7 +25,7 @@ library("Synth")
 ####################
 ####################
 
-data <- data.frame(t(read.table("R:/Simulations/MLAB_data.txt")))
+data <- data.frame(t(read.table("E:/BEAST/datasets/MLAB_data.txt")))
 #data <- data.frame(t(read.table("Z:/Simulations/MLAB_data.txt")))
 
 Names <- c("State_ID","Income","Retail price", "Young", "BeerCons","Smoking1988", "Smoking1980","Smoking1975",
@@ -47,9 +47,7 @@ abline(v=1988, col="firebrick")
 ### Treatment effect
 X <- cbind(rep(1,nrow(data)),
            data[,c("Income","Retail price", "Young", "BeerCons"
-                  , "SmokingCons1970"
-                  , "SmokingCons1971", "SmokingCons1972", "SmokingCons1973", "SmokingCons1974"
-                  , "SmokingCons1975"
+                  , "SmokingCons1970", "SmokingCons1971", "SmokingCons1972", "SmokingCons1973", "SmokingCons1974", "SmokingCons1975"
                   #, "SmokingCons1976", "SmokingCons1977", "SmokingCons1978", "SmokingCons1979"
                   , "SmokingCons1980"
                   #, "SmokingCons1981", "SmokingCons1982", "SmokingCons1983", "SmokingCons1984"
@@ -61,15 +59,18 @@ d <- data[,"Treated"]
 ### 2. Calibration part
 
 ### Setting
-
 d <- as.matrix(d)
 X <- as.matrix(X)
 
 n <- nrow(X)
 p <- ncol(X)
 
+### Configuration to get same graphs as in the paper
+### CAL penalty set at .03
+### ORT penalty set at .03
+
 ### First step: Lasso for Calibration
-CAL <- CalibrationLasso(d,X,c=0.02,maxIterPen=1e4,trace=T,PostLasso=T)
+CAL <- CalibrationLasso(d,X,c=.03,maxIterPen=1e4,trace=T,PostLasso=T)
 W <- (1-d)*exp(X%*%CAL$betaLasso)/sum(d)
 sum(W)
 
@@ -87,7 +88,7 @@ for(t in 1970:2000){
   y <- data[,varname]
   
   # Estimation
-  ORT <- OrthogonalityReg(y,d,X,beta=CAL$betaLasso, method="WLSLasso",c=.45,
+  ORT <- OrthogonalityReg(y,d,X,beta=CAL$betaLasso, method="WLSLasso",c=.3,
                       maxIterPen=1000,nopenset=1,RescaleY=F,
                       maxIterLasso=10e6,PostLasso=F,trace=F)
   print(paste("year ",t," : "))
@@ -104,7 +105,7 @@ for(t in 1970:2000){
 
 ATT <- ts(ATT, start=c(1970), freq=1)
 
-ATTdata <- ts(cbind(ATT-1.96*Immunizedsd,ATT,ATT+1.96*Immunizedsd),start=c(1970), freq=1)
+ATTdata <- ts(cbind(ATT-qnorm(.975)*Immunizedsd,ATT,ATT+qnorm(.975)*Immunizedsd),start=c(1970), freq=1)
 
 ### Figure 2: Average Treatment Effect
 pdf("plots/Proposition99TreatmentEffect.pdf", width=10, height=6)

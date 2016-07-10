@@ -24,9 +24,9 @@ from DataSimExt import AwkwardDataSim
 from ImmunizedATT import ImmunizedATT
 
 ### Monte Carlo Simulation
-R = 10000; p=5; n=100
+R = 1000; p=5; n=100
 V = np.identity(p)
-val_b =[]; val_s = []
+val_b =[]; val_s = []; cf=[]
 start_time = time.time()
 
 for r in range(0,R):
@@ -43,10 +43,19 @@ for r in range(0,R):
     sol = np.array(wsol(X0.T,M,V))
     the_s = np.mean(y[d==1]) - y[d==0].dot(sol)
     val_s.append(the_s[0])
+    cf.append(y[d==0].dot(sol))
 
 print("--- %s seconds ---" % (time.time() - start_time))
 print(np.mean(val_b)); print(np.std(val_b))
 print(np.mean(val_s)); print(np.std(val_s))
+
+### Testing for normality
+cf = np.array(cf)
+test = scipy.stats.mstats.normaltest(cf)
+print(test.pvalue)
+
+test = scipy.stats.mstats.normaltest(val_s)
+print(test.pvalue)
 
 # check
 W = np.exp(X[d==0].dot(res['x']))/sum(d) # compute calibration weights
@@ -66,6 +75,16 @@ plt.ylabel('Probability')
 plt.title(r'$\mathrm{Histogram\ of\ Synthetic\ Control\ (red)\ and\ Calibration\ (blue)\ ATT:}$')
 plt.grid(True)
 
+plt.show()
+
+### Distrbution of SC counterfactual
+n, bins, patches = plt.hist(cf, 60, normed=1, facecolor='red', alpha=0.5)
+y = mlab.normpdf( bins, np.mean(cf), np.std(cf))
+l = plt.plot(bins, y, 'r--', linewidth=2)
+plt.xlabel('Y0')
+plt.ylabel('Probability')
+plt.title(r'$\mathrm{Histogram\ of\ Synthetic\ Control\ Outcome:}$')
+plt.grid(True)
 plt.show()
 
 # regression plot

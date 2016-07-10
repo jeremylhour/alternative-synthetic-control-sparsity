@@ -51,3 +51,49 @@ def synth(d,X,V=None,Z=None,OptimV=False):
 
     return sol
     
+### L2 penalty for finding w solution    
+def wsoll2(X0,X1,V,pen=0.0):
+    # For a given V, return the SC weights
+    n = X0.shape[1]
+    
+    # plus a L2 penalty term
+    dis = X0 - np.kron(np.ones([1,n]), X1)
+    
+    P = 2*(X0.T).dot(V.dot(X0)) + 2*pen*(dis.T).dot(V.dot(dis))
+    P = matrix(P.as_matrix())
+    q = -2*X0.T.dot(V.dot(X1))
+    q = matrix(q.as_matrix())
+    
+    ## Define constraints for cvx
+    # Sum to one
+    A = matrix(1.0,(1,n))
+    b = matrix(1.0)
+    # Between zero and one
+    G = matrix( np.concatenate((np.identity(n),-np.identity(n))) )
+    h = matrix( np.concatenate((np.ones(n),np.zeros(n))) )
+
+    # Solving
+    sol = solvers.qp(P,q,G,h,A,b)
+    return sol['x']    
+ 
+### Solution with l1 penalty
+def wsol(X0,X1,V):
+    # For a given V, return the SC weights
+    n = X0.shape[1]
+    
+    P = 2*(X0.T).dot(V.dot(X0))
+    P = matrix(P.as_matrix())
+    q = -2*X0.T.dot(V.dot(X1))
+    q = matrix(q.as_matrix())
+    
+    ## Define constraints for cvx
+    # Sum to one
+    A = matrix(1.0,(1,n))
+    b = matrix(1.0)
+    # Between zero and one
+    G = matrix( np.concatenate((np.identity(n),-np.identity(n))) )
+    h = matrix( np.concatenate((np.ones(n),np.zeros(n))) )
+
+    # Solving
+    sol = solvers.qp(P,q,G,h,A,b)
+    return sol['x']   

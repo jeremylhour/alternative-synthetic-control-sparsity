@@ -5,6 +5,8 @@
 ### Set working directory
 setwd("R:/Simulations/BEAST") # R pour Jeremy, Z pour Marianne
 
+setwd("E:/BEAST")
+
 rm(list=ls())
 set.seed(30031987)
 
@@ -33,7 +35,7 @@ source("functions/AwkwardDataSim.R")
 
 
 ### MC XP
-R <- 1000
+R <- 500
 Results <- matrix(ncol=9, nrow=R)
 AsySD <- matrix(ncol=9, nrow=R)
 Convergence <- matrix(ncol=3, nrow=R)
@@ -42,7 +44,7 @@ pb <- txtProgressBar(style = 3)
 
 for(r in 1:R){
   ### 1. Generate data
-  data <- ClassicDataSim(n=2000,p=100,Ry=.8,Rd=.2)
+  data <- ClassicDataSim(n=200,p=100,Ry=.8,Rd=.2)
   X <- data$X
   y <- data$y
   d <- data$d

@@ -209,6 +209,26 @@ legend(1971,80,
 dev.off()
 
 
+### Figure 5: Synthetic Control plot with confidence bands
+plotdata <- ts(cbind(CaliSmoke,Immunized,Immunized-qnorm(.975)*Immunizedsd,Immunized+qnorm(.975)*Immunizedsd,ADH),start=c(1970), freq=1)
+
+
+plot(plotdata, plot.type="single",
+     col=c("steelblue","firebrick","forestgreen","darkgoldenrod1"), lwd=2,
+     lty=c(1,6,6,6),xlab="", ylab="Cigarette consumption (Packs per capita)",
+     ylim=c(35,150))
+lim <- par("usr")
+rect(1988, lim[3], lim[2], lim[4], col = rgb(0.5,0.5,0.5,1/4))
+axis(1) ## add axes back
+axis(2)
+box() 
+legend(1971,80,
+       legend=c("Real California", "Immunized, Lasso","Synthetic California (weighted)", "Synthetic California (unweighted)"),
+       col=c("steelblue","firebrick","forestgreen","darkgoldenrod1"), lwd=2,
+       lty=c(1,6,6,6))
+
+
+
 ### Balance check
 # Checking covariate balancing
 # Lasso:

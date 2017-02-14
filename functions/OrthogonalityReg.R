@@ -68,7 +68,8 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
   
   # Penalty loadings: get a preliminary estimate
   m_y <- c(t(W)%*%y_tilde/sum(W))
-  Psi <- diag(as.vector(sqrt( t(W*(y_tilde-m_y)^2) %*% (diag(sqrt(W))%*%X)^2 / n )))
+  #Psi <- diag(as.vector(sqrt( t(W*(y_tilde-m_y)^2) %*% (diag(sqrt(W))%*%X)^2 / n )))
+  Psi <- diag(as.vector(sqrt( t(W*(y_tilde-m_y)^2) %*% sweep(X,MARGIN=1,sqrt(W),`*`)^2 / n )))
   
   # Estimation parameters
   v <- .01 # Stopping rule
@@ -86,7 +87,8 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
     
     # Update penalty loadings
     PrePsi <- Psi
-    Psi <- diag(as.vector(sqrt( t(W*(y_tilde-X%*%mu)^2) %*% (diag(sqrt(W))%*%X)^2 / n )))
+    # Psi <- diag(as.vector(sqrt( t(W*(y_tilde-X%*%mu)^2) %*% (diag(sqrt(W))%*%X)^2 / n )))
+    Psi <- diag(as.vector(sqrt( t(W*(y_tilde-X%*%mu)^2) %*% (sweep(X,MARGIN=1,sqrt(W),`*`))^2 / n )))
     
     # Trace showing
     if(trace & k%%5==0){

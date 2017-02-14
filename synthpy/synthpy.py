@@ -77,7 +77,7 @@ def wsoll2(X0,X1,V,pen=0.0):
     return sol['x']    
  
 ### Solution with l1 penalty
-def wsol(X0,X1,V):
+def wsoll1(X0,X1,V):
     # For a given V, return the SC weights
     n = X0.shape[1]
     

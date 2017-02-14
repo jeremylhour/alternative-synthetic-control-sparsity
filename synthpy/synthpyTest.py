@@ -15,13 +15,13 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 
 # Load functions
-os.chdir("/Volumes/USB_KEY/BEAST/synthpy")
+os.chdir("R:/Simulations/BEAST/synthpy/")
 from synthpy import wsol, funcwsol, synth, wsoll2
 
 
 ### California Tobacco example
 # Load synth dataset
-data = pd.read_table("/Volumes/USB_KEY/BEAST/synthpy/calitobacco.txt")
+data = pd.read_table("R:/Simulations/BEAST/synthpy/calitobacco.txt")
 data.head()
 d = data['Treated']
 X = data[["Income","RetailPrice", "Young", "BeerCons"
@@ -40,17 +40,19 @@ for i in range(1981,2001):
 y = data[names]
 
 ### Data loading over
-V=np.diag([.1,.1,.1,.1,6,6,6,6,6,6,6,6])
+### Computing synthetic unit
+V=np.diag([.1,.1,.1,.1,6,6,6,6,6,6,6,6]) 
 
 sol = wsol(X[d==0].T,X[d==1].T,V)
-print(X[d==1].T)
-print(X[d==0].T.dot(sol))
+print(X[d==1].T) # California characteristics
+print(X[d==0].T.dot(sol)) # Synthetic unit characteristics
 
-sol = synth(d,X,V)
+### Full synthetic control
+sol = synth(d,X,V,Z,OptimV=True)
 
 ### With L2 penalty term
-R = 1000
-penalty = np.linspace(0,1000000,R)
+R = 100
+penalty = np.linspace(0,100000,R)
 M = []
 
 for val in penalty:

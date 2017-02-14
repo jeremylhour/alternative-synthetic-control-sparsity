@@ -1,5 +1,7 @@
-### Monte Carlo simulations
-### With calibration and synthetic control
+### Calibration vs. Synthetic Control
+### Started while at Harvard
+### Edited: 22 november 2016
+### Jeremy L Hour
 
 import os
 import time
@@ -15,16 +17,18 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
 # Load functions
-os.chdir("/Volumes/USB_KEY/BEAST/synthpy")
+os.chdir("R:/Simulations/BEAST/synthpy")
 from synthpy import wsol, funcwsol, synth
-os.chdir("/Volumes/USB_KEY/BEAST/BEASTpy")
+os.chdir("R:/Simulations/BEAST/BEASTpy")
 from calibpy import gamma, gammagrad
 from logitpy import logitloss, logitlossgrad
 from DataSimExt import AwkwardDataSim
 from ImmunizedATT import ImmunizedATT
 
+# Monte Carlo simulation to evaluate calibration versus synthetic control
+
 ### Monte Carlo Simulation
-R = 1000; p=5; n=100
+R = 10000; p=5; n=100
 V = np.identity(p)
 val_b =[]; val_s = []; cf=[]
 start_time = time.time()
@@ -61,6 +65,18 @@ print(test.pvalue)
 W = np.exp(X[d==0].dot(res['x']))/sum(d) # compute calibration weights
 BCc = np.squeeze(M) - X0.T.dot(W)
 BCs = np.squeeze(M) - np.squeeze(X0.T.dot(sol))
+
+# Plot of synthetic weights vs calibration
+plt.scatter(W,sol)
+plt.plot([0, .2], [0, .2], color = 'red', linestyle = 'solid')
+plt.xlabel('Calibration weight')
+plt.ylabel('Synthetic weight')
+plt.title(r'$\mathrm{Calibration\ v\ Synthetic\ weights}$')
+plt.show()
+
+# Get corresponding beta for synthetic control
+ly = np.log(sol*sum(d))
+beta_SC = inv(X[d==0].T.dot(X[d==0])).dot(X[d==0].T.dot(ly))
 
 ### Distrbution of SC estimate
 n, bins, patches = plt.hist(val_s, 60, normed=1, facecolor='red', alpha=0.5)

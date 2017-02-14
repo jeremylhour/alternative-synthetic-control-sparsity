@@ -32,7 +32,8 @@ LassoFISTA <- function(betaInit=rep(0,ncol(X)),y,X,W=rep(1,nrow(X)),
   # Observation weighting
   W <- as.vector(W)
   y <- sqrt(W)*y
-  X <- diag(sqrt(W)) %*% as.matrix(X)
+  #X <- diag(sqrt(W)) %*% as.matrix(X)
+  X = sweep(X,MARGIN=1,sqrt(W),`*`)
   
   ### Set Algo. Values
   eta <- 1/max(2*eigen(t(X)%*%X)$values/nrow(X))

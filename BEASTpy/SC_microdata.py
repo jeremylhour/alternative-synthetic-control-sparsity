@@ -14,9 +14,9 @@ import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
 # Load functions
-os.chdir("/Volumes/USB_KEY/BEAST/synthpy")
+os.chdir("R:/Simulations/BEAST/synthpy")
 from synthpy import wsol, funcwsol, synth, wsoll2
-os.chdir("/Volumes/USB_KEY/BEAST/BEASTpy")
+os.chdir("R:/Simulations/BEAST/BEASTpy")
 from calibpy import gamma, gammagrad
 from logitpy import logitloss, logitlossgrad
 from DataSimExt import AwkwardDataSim

@@ -37,7 +37,7 @@ func_liste = c('DataSim','DataSim_noX','DataSim_interaction',
 
 ### Monte Carlo Simulations -- setting up the function
 
-Simu <- function(N,P,R=100,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
+Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
   print(paste('--- Simulations start : R=',R,', n=',N,', p=',P,' ---'))
   print(paste('--- DGP style :',Table))
   ## STEP A. SIMULATIONS

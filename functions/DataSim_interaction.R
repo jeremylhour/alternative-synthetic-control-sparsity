@@ -16,8 +16,6 @@
 
 DataSim_interaction <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   
-  library("MASS")
-  
   ### Covariate variance matrix
   Sigma <- matrix(0,nrow=p, ncol=p)
   

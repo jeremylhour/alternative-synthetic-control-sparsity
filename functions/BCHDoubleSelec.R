@@ -33,9 +33,6 @@ BCHDoubleSelec <- function(y,d,X,cd=1.1,cy=1.1,
                              nopenset=c(1),RescaleY=F,
                              maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,trace=F){
   
-  ### Load user-defined functions
-  source("functions/LassoFISTA.R")
-  
   ### Setting
   d <- as.matrix(d)
   y <- as.matrix(y)

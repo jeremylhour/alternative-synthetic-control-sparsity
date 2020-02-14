@@ -16,7 +16,7 @@
 
 DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   
-  library("MASS")
+  #library("MASS")
   
   ### Covariate variance matrix
   Sigma <- matrix(0,nrow=p, ncol=p)
@@ -42,11 +42,9 @@ DataSim <- function(n=2000,p=50,Ry=.5,Rd=.2,Intercept=T, rho=.5, TreatHeter=F){
   }
   
   ### Adjustment to match R.squared
-  c <- sqrt((1/t(gamma)%*%Sigma%*%gamma)*(Rd/(1-Rd)))
-  gamma <- c*gamma
+  gamma <- c(sqrt((1/t(gamma)%*%Sigma%*%gamma)*(Rd/(1-Rd))))*gamma
   
-  c <- sqrt((1/t(b)%*%Sigma%*%b)*(Ry/(1-Ry)))
-  b <- c*b
+  b <- c(sqrt((1/t(b)%*%Sigma%*%b)*(Ry/(1-Ry))))*b
   
   X <- mvrnorm(n = n, mu=rep(0,p), Sigma)
   d <- as.numeric(runif(n) < pnorm(X%*%gamma))

@@ -22,6 +22,7 @@ ImmunizedATT <- function(y,d,X,beta,mu=rep(0,ncol(X)),Immunity=T){
   X <- as.matrix(X)
   
   eps <- y
+  
   if(Immunity) eps <- y - X%*%mu 
   
   pi <- mean(d)

@@ -5,7 +5,7 @@
 ### 14/02/2020
 
 
-setwd("W:/Telechargements/BEAST-master/BEAST-master")
+setwd("W:/1A_These/A. Research/beast_git/BEAST")
 rm(list=ls())
 
 
@@ -39,10 +39,10 @@ func_liste = c('DataSim','DataSim_noX','DataSim_interaction',
 
 Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
   print(paste('--- Simulations start : R=',R,', n=',N,', p=',P,' ---'))
-  print(paste('--- DGP style :',Table))
+  print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
-  cl = makeCluster(cores[1]) #not to overload your computer
+  cl = makeCluster(cores[1]-1) #not to overload your computer
   registerDoParallel(cl)
   
   t_start <- Sys.time()
@@ -62,11 +62,11 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
     X=data$X; y=data$y; d=data$d
     
     ### 2. Calibration part
-    CAL <- CalibrationLasso(d,X,c=c1,maxIterPen=5e1,PostLasso=T,trace=F)
+    CAL <- CalibrationLasso(d,X,c=.7,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 3. Computes the orthogonality parameter, using method WLS Lasso
     ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
-                                  c=c2, nopenset=c(1), RescaleY=F,
+                                  c=1.5, nopenset=c(1), RescaleY=F,
                                   maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
     ### 4. Logit Lasso estimate
@@ -86,6 +86,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
     Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta,
                   ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$theta,
+                  ImmunizedATT(y,d,X,CAL$betaLasso,FARRELL$muLasso, Immunity=T)$theta,
                   BCH$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta)
@@ -93,6 +94,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
     AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$sigma,
+               ImmunizedATT(y,d,X,CAL$betaLasso,FARRELL$muLasso, Immunity=T)$sigma,
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma)
@@ -105,10 +107,12 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
   }
   
   print('--- Simulations over ! ---')
-  print(paste('--- Time Elapsed : ',Sys.time()-t_start,' ---'))
+  print(Sys.time()-t_start)
   stopCluster(cl)
   
-  Estimate = resPAR[,1:6]; AsySD = resPAR[,7:12]; Convergence =  resPAR[,13:14]
+  nb_e = 7 # nb of estimators
+  
+  Estimate = resPAR[,1:nb_e]; AsySD = resPAR[,(nb_e+1):(2*nb_e)]; Convergence =  resPAR[,(2*nb_e+1):((2*nb_e+2))]
   
   ## STEP B. POST-SIMULATION TREATMENT
   
@@ -118,17 +122,20 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
   Estimate = Estimate[valid,]
   AsySD = AsySD[valid,]
   
+  print(paste('--- Convergence pct : ',mean(valid),' ---'))
+  
+  
   ### Compute bias and RMSE
   StatDisplay = data.frame()
-  StatDisplay[1:6,"RMSE"]  = sqrt(apply(Estimate^2,2,mean))
-  StatDisplay[1:6,"bias"] = apply(Estimate,2,mean)
+  StatDisplay[1:nb_e,"RMSE"]  = sqrt(apply(Estimate^2,2,mean,na.rm=T))
+  StatDisplay[1:nb_e,"bias"] = apply(Estimate,2,mean,na.rm=T)
   
   borne_sup = Estimate + qnorm(.975) * AsySD
   borne_inf = Estimate - qnorm(.975) * AsySD
-  StatDisplay[1:6,"CoverageRate"] = apply((borne_sup>0)*(borne_inf<0),2,mean) # zero if zero is not included in CI
+  StatDisplay[1:nb_e,"CoverageRate"] = apply((borne_sup>0)*(borne_inf<0),2,mean,na.rm=T) # zero if zero is not included in CI
   
   
-  row.names(StatDisplay) <- c("Naive Lasso","IPW LogitLasso","Immunized Lasso",
+  row.names(StatDisplay) <- c("Naive Lasso","IPW LogitLasso","Immunized Lasso","Immunized Lasso, unweighted reg",
                               "BCH 2014","Farrell Lasso","Farrell Post-Lasso")
   print(StatDisplay)
   
@@ -142,7 +149,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
 ###########################
 ###########################
 
-DGP_style = 'noX' # to modify to generate each table
+DGP_style = 'noX' # modify to generate each table
 
 set.seed(30031987)
 
@@ -163,6 +170,7 @@ N500P100 <- Simu(N=500,P=100,Table=DGP_style)
 N500P200 <- Simu(N=500,P=200,Table=DGP_style)
 N500P500 <- Simu(N=500,P=500,Table=DGP_style)
 
+save.image("//ulysse/users/JL.HOUR/1A_These/sim_output")
 
 #########################
 #########################
@@ -170,8 +178,10 @@ N500P500 <- Simu(N=500,P=500,Table=DGP_style)
 #########################
 #########################
 
-save.image("W:\\Bureau\\calage_temp\\BEAST\\MC_base")
-
+estim_names <- c('Naive Plug-in','IPW Logit-Lasso',
+                 'Immunized','Immunized Unweighted Reg',
+                 'BCH','Farell','Farell PL')
+nb_e = length(estim_names)
 
 P50 <- rbind(N50P50$StatDisplay,N100P50$StatDisplay,N200P50$StatDisplay,N500P50$StatDisplay)
 P100 <- rbind(N50P100$StatDisplay,N100P100$StatDisplay,N200P100$StatDisplay,N500P100$StatDisplay)
@@ -180,14 +190,13 @@ P500 <- rbind(N200P500$StatDisplay,N500P500$StatDisplay)
 
 res <- data.frame()
 
-res[1:24,1:3] <- P50
-res[1:24,4:6] <- P100
-res[13:24,7:9] <- P200
-res[13:24,10:12] <- P500
+res[1:(4*nb_e),1:3] <- P50
+res[1:(4*nb_e),4:6] <- P100
+res[(2*nb_e+1):(4*nb_e),7:9] <- P200
+res[(2*nb_e+1):(4*nb_e),10:12] <- P500
 
 res <- round(res,digits=3)
 
-estim_names <- c("Naive Plug-in","IPW Logit-Lasso","Immunized","BCH","Farell","Farell PL")
 row.names(res) <- c(paste('50',estim_names),
                     paste('100',estim_names),
                     paste('200',estim_names),
@@ -196,6 +205,6 @@ row.names(res) <- c(paste('50',estim_names),
 names(res) <- c("RMSE","Bias","Coverage Rate","RMSE","Bias","Coverage Rate",
                 "RMSE","Bias","Coverage Rate","RMSE","Bias","Coverage Rate")
 
-write.table(res, file = paste("Table_",DGP_style,".txt",sep=''), append = FALSE, quote = FALSE, sep = " & ",
+write.table(res, file = paste("New_Simulations/Table_",DGP_style,".txt",sep=''), append = FALSE, quote = FALSE, sep = " & ",
             eol = paste(" \\\\ \n"), na = "--", dec = ".", row.names = T,
             col.names = T)

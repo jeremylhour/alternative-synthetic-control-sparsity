@@ -1,8 +1,8 @@
 ### Parametric Alternative to SYnthetic Control: Monte Carlo Simulation
-### reports RMSE, bias and coverage rate
-### also parallelized
+### reports RMSE, bias and coverage rate, also parallelized
 ### Jeremy L'Hour
 ### 14/02/2020
+### Last edited: 18/02/2020
 
 
 setwd("W:/1A_These/A. Research/beast_git/BEAST")
@@ -149,9 +149,9 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
 ###########################
 ###########################
 
-DGP_style = 'noX' # modify to generate each table
+DGP_style = "heterogeneous" # modify here to generate each table
 
-set.seed(30031987)
+set.seed(12071990)
 
 N50P50 <- Simu(N=50,P=50,Table=DGP_style)
 N50P100 <- Simu(N=50,P=100,Table=DGP_style)
@@ -170,7 +170,7 @@ N500P100 <- Simu(N=500,P=100,Table=DGP_style)
 N500P200 <- Simu(N=500,P=200,Table=DGP_style)
 N500P500 <- Simu(N=500,P=500,Table=DGP_style)
 
-save.image("//ulysse/users/JL.HOUR/1A_These/sim_output")
+#save.image("//ulysse/users/JL.HOUR/1A_These/sim_output")
 
 #########################
 #########################
@@ -183,28 +183,88 @@ estim_names <- c('Naive Plug-in','IPW Logit-Lasso',
                  'BCH','Farell','Farell PL')
 nb_e = length(estim_names)
 
-P50 <- rbind(N50P50$StatDisplay,N100P50$StatDisplay,N200P50$StatDisplay,N500P50$StatDisplay)
-P100 <- rbind(N50P100$StatDisplay,N100P100$StatDisplay,N200P100$StatDisplay,N500P100$StatDisplay)
-P200 <- rbind(N200P200$StatDisplay,N500P200$StatDisplay)
-P500 <- rbind(N200P500$StatDisplay,N500P500$StatDisplay)
-
 res <- data.frame()
 
-res[1:(4*nb_e),1:3] <- P50
-res[1:(4*nb_e),4:6] <- P100
-res[(2*nb_e+1):(4*nb_e),7:9] <- P200
-res[(2*nb_e+1):(4*nb_e),10:12] <- P500
+res[1:(4*nb_e),1:3] <- rbind(N50P50$StatDisplay,N100P50$StatDisplay,N200P50$StatDisplay,N500P50$StatDisplay) # p = 50
+res[1:(4*nb_e),4:6] <- rbind(N50P100$StatDisplay,N100P100$StatDisplay,N200P100$StatDisplay,N500P100$StatDisplay) # p = 100
+res[(2*nb_e+1):(4*nb_e),7:9] <- rbind(N200P200$StatDisplay,N500P200$StatDisplay) # p = 200
+res[(2*nb_e+1):(4*nb_e),10:12] <- rbind(N200P500$StatDisplay,N500P500$StatDisplay) # p = 500
 
 res <- round(res,digits=3)
 
-row.names(res) <- c(paste('50',estim_names),
-                    paste('100',estim_names),
-                    paste('200',estim_names),
-                    paste('500',estim_names))
+row.names(res) <- c(paste('n=50',estim_names),
+                    paste('n=100',estim_names),
+                    paste('n=200',estim_names),
+                    paste('n=500',estim_names))
 
-names(res) <- c("RMSE","Bias","Coverage Rate","RMSE","Bias","Coverage Rate",
-                "RMSE","Bias","Coverage Rate","RMSE","Bias","Coverage Rate")
+names(res) <- rep(c("RMSE","Bias","Cov. Rate"),4)
+
 
 write.table(res, file = paste("New_Simulations/Table_",DGP_style,".txt",sep=''), append = FALSE, quote = FALSE, sep = " & ",
+            eol = paste(" \\\\ \n"), na = "--", dec = ".", row.names = T,
+            col.names = T)
+
+####################################
+####################################
+### FUNCTIONS TO COLOR RESULTS #####
+####################################
+####################################
+
+mm_rescale <- function(x,absolute=F){
+  if(absolute){
+    y = abs(x)
+  } else {
+    y = x
+  }
+  
+  if(max(y)-min(y) == 0){
+    y_rescaled = round(y-min(y),digits=3)
+  } else {
+    y_rescaled = round((y-min(y))/(max(y)-min(y)),digits=3)
+  }
+  
+  return(y_rescaled)
+}
+
+col_latex <- function(rouge,vert,bleu){
+  paste("\\cellcolor[rgb]{",rouge,",",vert,",",bleu,"}",sep='') 
+}
+
+return_col <- function(x,shading='bleu',absolute=F){
+  y = mm_rescale(x,absolute)
+  if(shading=='bleu'){
+    col_text = mapply(function(x) col_latex(.31+.69*x,.47+x/2,bleu = .753),y)
+  } else if (shading=='rouge'){
+    col_text = mapply(function(x) col_latex(rouge=1,.95-x/2,.55-x/2),y)
+  }
+  col_text = paste(col_text,round(x,digits=3))
+  return(col_text)
+}
+
+#####################
+#####################
+### COLOR RESULTS ###
+#####################
+#####################
+
+res_colored = res
+
+for(bloc in 1:4){
+  for(k in 1:ncol(res)){
+    if(sum(is.na(res_colored[((bloc-1)*nb_e+1):(bloc*nb_e),k]))>0){
+      next 
+    }
+    
+    if(k %% 3==1){
+      res_colored[((bloc-1)*nb_e+1):(bloc*nb_e),k] = return_col(res[((bloc-1)*nb_e+1):(bloc*nb_e),k],shading="bleu")
+    } else if(k %% 3==2){
+      res_colored[((bloc-1)*nb_e+1):(bloc*nb_e),k] = return_col(res[((bloc-1)*nb_e+1):(bloc*nb_e),k],shading="bleu",absolute=T)
+    } else if(k %% 3==0){
+      res_colored[((bloc-1)*nb_e+1):(bloc*nb_e),k] = return_col(res[((bloc-1)*nb_e+1):(bloc*nb_e),k],shading="rouge")
+    }
+  }
+}
+
+write.table(res_colored, file = paste("New_Simulations/ColorTable_",DGP_style,".txt",sep=''), append = FALSE, quote = FALSE, sep = " & ",
             eol = paste(" \\\\ \n"), na = "--", dec = ".", row.names = T,
             col.names = T)

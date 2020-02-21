@@ -2,7 +2,7 @@
 ### reports RMSE, bias and coverage rate, also parallelized
 ### Jeremy L'Hour
 ### 14/02/2020
-### Last edited: 18/02/2020
+### Last edited: 19/02/2020
 
 
 setwd("W:/1A_These/A. Research/beast_git/BEAST")
@@ -19,6 +19,7 @@ rm(list=ls())
 library("MASS")
 library("foreach")
 library("doParallel")
+library('lbfgs')
 
 ### Load user-defined functions
 source("functions/DataSim.R") 
@@ -37,7 +38,7 @@ func_liste = c('DataSim','DataSim_noX','DataSim_interaction',
 
 ### Monte Carlo Simulations -- setting up the function
 
-Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
+Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   print(paste('--- Simulations start : R=',R,', n=',N,', p=',P,' ---'))
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
@@ -69,6 +70,11 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
                                   c=1.5, nopenset=c(1), RescaleY=F,
                                   maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
+    ### 3bis. Computes the orthogonality parameter, using method WLS Post-Lasso
+    ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
+                                  c=1.5, nopenset=c(1), RescaleY=F,
+                                  maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
+    
     ### 4. Logit Lasso estimate
     LOGIT <- LogitLasso(d,X,c=.6,maxIterPen=5e1,PostLasso=T,trace=F)
     
@@ -86,7 +92,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
     Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta,
                   ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X,CAL$betaLasso,FARRELL$muLasso, Immunity=T)$theta,
+                  ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$theta,
                   BCH$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta)
@@ -94,7 +100,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
     AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X,CAL$betaLasso,FARRELL$muLasso, Immunity=T)$sigma,
+               ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$sigma,
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma)
@@ -125,7 +131,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
   print(paste('--- Convergence pct : ',mean(valid),' ---'))
   
   
-  ### Compute bias and RMSE
+  ### Compute bias, RMSE and Coverage Rate
   StatDisplay = data.frame()
   StatDisplay[1:nb_e,"RMSE"]  = sqrt(apply(Estimate^2,2,mean,na.rm=T))
   StatDisplay[1:nb_e,"bias"] = apply(Estimate,2,mean,na.rm=T)
@@ -135,8 +141,8 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
   StatDisplay[1:nb_e,"CoverageRate"] = apply((borne_sup>0)*(borne_inf<0),2,mean,na.rm=T) # zero if zero is not included in CI
   
   
-  row.names(StatDisplay) <- c("Naive Lasso","IPW LogitLasso","Immunized Lasso","Immunized Lasso, unweighted reg",
-                              "BCH 2014","Farrell Lasso","Farrell Post-Lasso")
+  row.names(StatDisplay) <- c("Naive -- Calibration Lasso","Naive -- IPW Logit Lasso","Immunized -- Lasso",
+                              "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso")
   print(StatDisplay)
   
   return(list(Estimate = Estimate, AsySD = AsySD, StatDisplay = StatDisplay))
@@ -151,7 +157,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,c1=.7,c2=2,Table="base"){
 
 DGP_style = "heterogeneous" # modify here to generate each table
 
-set.seed(12071990)
+set.seed(99999)
 
 N50P50 <- Simu(N=50,P=50,Table=DGP_style)
 N50P100 <- Simu(N=50,P=100,Table=DGP_style)
@@ -178,9 +184,8 @@ N500P500 <- Simu(N=500,P=500,Table=DGP_style)
 #########################
 #########################
 
-estim_names <- c('Naive Plug-in','IPW Logit-Lasso',
-                 'Immunized','Immunized Unweighted Reg',
-                 'BCH','Farell','Farell PL')
+estim_names <- c("Naive Plug-In -- Calibration Lasso","Naive Plug-In -- Logit Lasso","Immunized -- Lasso",
+                 "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso")
 nb_e = length(estim_names)
 
 res <- data.frame()

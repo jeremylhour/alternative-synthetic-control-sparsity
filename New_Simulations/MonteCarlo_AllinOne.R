@@ -2,7 +2,7 @@
 ### reports RMSE, bias and coverage rate, also parallelized
 ### Jeremy L'Hour
 ### 14/02/2020
-### Last edited: 19/02/2020
+### Last edited: 13/03/2020
 
 
 setwd("W:/1A_These/A. Research/beast_git/BEAST")
@@ -48,7 +48,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   
   t_start <- Sys.time()
   
-  resPAR <- foreach(r = 1:R,.export=func_liste,.packages=c('lbfgs','MASS'),.combine='rbind', .multicombine=TRUE) %dopar% {
+  resPAR <- foreach(r = 1:R,.export=func_liste,.packages=c('lbfgs','MASS'),.combine='rbind', .multicombine=TRUE, .errorhandling = 'remove') %dopar% {
     ### 1. Generate data
     if(Table=="base"){
       data <- DataSim(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
@@ -63,24 +63,24 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
     X=data$X; y=data$y; d=data$d
     
     ### 2. Calibration part
-    CAL <- CalibrationLasso(d,X,c=.7,maxIterPen=5e1,PostLasso=T,trace=F)
+    CAL <- CalibrationLasso(d,X,c=.5,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 3. Computes the orthogonality parameter, using method WLS Lasso
     ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
-                                  c=1.5, nopenset=c(1), RescaleY=F,
-                                  maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
+                                           c=1.1, nopenset=c(1), RescaleY=F,
+                                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
     ### 3bis. Computes the orthogonality parameter, using method WLS Post-Lasso
     ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
-                                  c=1.5, nopenset=c(1), RescaleY=F,
+                                  c=1.1, nopenset=c(1), RescaleY=F,
                                   maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
     
     ### 4. Logit Lasso estimate
-    LOGIT <- LogitLasso(d,X,c=.6,maxIterPen=5e1,PostLasso=T,trace=F)
+    LOGIT <- LogitLasso(d,X,c=.5,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 4 bis. Farrell (2015)
     FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
-                                c=2, nopenset=c(1), RescaleY=F,
+                                c=1.1, nopenset=c(1), RescaleY=F,
                                 maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
     
     ### 5. BCH (2014) Estimate
@@ -155,26 +155,27 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
 ###########################
 ###########################
 
-DGP_style = "heterogeneous" # modify here to generate each table
+DGP_style = "base" # modify here to generate each table
 
 set.seed(99999)
 
-N50P50 <- Simu(N=50,P=50,Table=DGP_style)
-N50P100 <- Simu(N=50,P=100,Table=DGP_style)
-
-N100P50 <- Simu(N=100,P=50,Table=DGP_style)
-N100P100 <- Simu(N=100,P=100,Table=DGP_style)
-N100P200 <- Simu(N=100,P=200,Table=DGP_style)
+N500P50 <- Simu(N=500,P=50,Table=DGP_style)
+N500P100 <- Simu(N=500,P=100,Table=DGP_style)
+N500P200 <- Simu(N=500,P=200,Table=DGP_style)
+N500P500 <- Simu(N=500,P=500,Table=DGP_style)
 
 N200P50 <- Simu(N=200,P=50,Table=DGP_style)
 N200P100 <- Simu(N=200,P=100,Table=DGP_style)
 N200P200 <- Simu(N=200,P=200,Table=DGP_style)
 N200P500 <- Simu(N=200,P=500,Table=DGP_style)
 
-N500P50 <- Simu(N=500,P=50,Table=DGP_style)
-N500P100 <- Simu(N=500,P=100,Table=DGP_style)
-N500P200 <- Simu(N=500,P=200,Table=DGP_style)
-N500P500 <- Simu(N=500,P=500,Table=DGP_style)
+N100P50 <- Simu(N=100,P=50,Table=DGP_style)
+N100P100 <- Simu(N=100,P=100,Table=DGP_style)
+N100P200 <- Simu(N=100,P=200,Table=DGP_style)
+
+N50P50 <- Simu(N=50,P=50,Table=DGP_style)
+N50P100 <- Simu(N=50,P=100,Table=DGP_style)
+
 
 #save.image("//ulysse/users/JL.HOUR/1A_These/sim_output")
 

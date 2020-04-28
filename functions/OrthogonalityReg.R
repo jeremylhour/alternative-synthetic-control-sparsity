@@ -34,22 +34,17 @@
 OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
                              c=1.1,nopenset=c(1),RescaleY=F,
                              maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=F,trace=F){
-  
-  ### Load user-defined functions
-  source("functions/LassoFISTA.R")
-  
   ### Setting
-  d <- as.matrix(d)
-  y <- as.matrix(y)
-  X <- as.matrix(X)
-  
-  n <- nrow(X)
-  p <- ncol(X)
+  d <- as.matrix(d); y <- as.matrix(y); X <- as.matrix(X)
+  n <- nrow(X);p <- ncol(X)
   
   ### Type of method to compute weights
-  if(method == "WLSLasso"){ W=(1-d)*exp(X%*%beta) }
-  if(method == "LinearOutcome"){ W=(1-d)*(sum(d)/sum(1-d)) }
-  W <- as.vector(W)
+  if(method == "WLSLasso"){ 
+    W=as.vector((1-d)*exp(X%*%beta))
+    W[is.na(W)]=0
+  } else if(method == "LinearOutcome"){
+    W=as.vector((1-d)*(sum(d)/sum(1-d)))
+    }
   
   ### First step: Lasso
   

@@ -25,9 +25,6 @@
 
 CalibrationLasso <- function(d,X,c=1.1,
                              maxIterPen=100,PostLasso=F,trace=F){
-  ### Load necessary packages
-  library("lbfgs")
- 
   ### Setting
   d <- as.matrix(d)
   X <- as.matrix(X)
@@ -62,11 +59,12 @@ CalibrationLasso <- function(d,X,c=1.1,
     Psi <- diag(as.vector(sqrt( t((d - exp(X%*%beta)*(1-d))^2) %*% X^2 / n )))
     
     if(trace & k%%5==0) print(paste("Max. pen. loading diff at Lasso Iteration nb.",k,":",max(abs(diag(Psi-PrePsi)))))
+    if(any(exp(X%*%beta)==Inf)) break
     if(k > maxIterPen || max(abs(diag(Psi-PrePsi))) < v) break
   }
   
   betaLasso <- beta 
-  SHat <- union(1,which(betaLasso != 0)) #Always put a constant
+  SHat <- union(1,which(betaLasso != 0)) # Always put a constant
   
   
   ### Second step: Post-Lasso
@@ -78,7 +76,7 @@ CalibrationLasso <- function(d,X,c=1.1,
   }
   
   
-  if(k > maxIterPen){
+  if(k > maxIterPen || any(exp(X%*%beta)==Inf)){
     cvg=-999
     if(trace) print("Penalty estimation did not converge.")
   } else {

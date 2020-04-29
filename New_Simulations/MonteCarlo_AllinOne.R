@@ -43,7 +43,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
-  cl = makeCluster(cores[1]-1) #not to overload your computer
+  cl = makeCluster(20) #not to overload your computer
   registerDoParallel(cl)
   
   t_start <- Sys.time()
@@ -155,7 +155,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
 ###########################
 ###########################
 
-DGP_style = "base" # modify here to generate each table
+DGP_style = "interaction" # modify here to generate each table
 
 set.seed(99999)
 

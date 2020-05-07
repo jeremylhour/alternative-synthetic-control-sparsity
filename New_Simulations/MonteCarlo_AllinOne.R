@@ -39,7 +39,7 @@ func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigm
 
 ### Monte Carlo Simulations -- setting up the function
 
-Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
+Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
   print(paste('--- Simulations start : R =',R,', n =',N,', p =',P,' ---'))
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
@@ -94,7 +94,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
     ### 6. Naive Oracle (for New_DGP)
-    Oracle <- CalibrationLasso(d,X[,c(1:10,(P-9):P)],c=0,maxIterPen=5e1,PostLasso=T,trace=F)
+    ORACLE <- CalibrationLasso(d,X[,1:11],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
     Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
@@ -104,7 +104,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
                   BCH$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X[,c(1:10,(P-9):P)],Oracle$betaPL, Immunity=F)$theta)
+                  ImmunizedATT(y,d,X[,1:11],ORACLE$betaLasso, Immunity=F)$theta)
     
     AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
@@ -113,7 +113,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X[,c(1:10,(P-9):P)],Oracle$betaPL, Immunity=F)$sigma)
+               ImmunizedATT(y,d,X[,1:11],ORACLE$betaLasso, Immunity=F)$sigma)
     
     
     Convergence <- c(CAL$convergence,
@@ -154,7 +154,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   
   row.names(StatDisplay) <- c("Naive -- Balancing Lasso","Naive -- IPW Logit Lasso","Immunized -- Lasso",
                               "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso",
-                              "Naive Oracle")
+                              "Oracle -- Balancing")
   print(StatDisplay)
   
   return(list(Estimate = Estimate, AsySD = AsySD, StatDisplay = StatDisplay))
@@ -199,7 +199,7 @@ N50P100 <- Simu(N=50,P=100,Table=DGP_style)
 
 estim_names <- c("Naive Plug-In -- Balancing Lasso","Naive Plug-In -- Logit Lasso","Immunized -- Lasso",
                  "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso",
-                 "Naive Oracle")
+                 "Oracle -- Balancing")
 nb_e = length(estim_names)
 
 res <- data.frame()

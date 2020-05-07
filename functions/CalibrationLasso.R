@@ -23,8 +23,7 @@
 #' @author Jeremy Lhour
 
 
-CalibrationLasso <- function(d,X,c=1.1,
-                             maxIterPen=100,PostLasso=F,trace=F){
+CalibrationLasso <- function(d,X,c=1.1,maxIterPen=100,PostLasso=F,trace=F){
   ### Setting
   d <- as.matrix(d)
   X <- as.matrix(X)

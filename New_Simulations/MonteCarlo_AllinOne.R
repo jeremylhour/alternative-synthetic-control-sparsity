@@ -23,6 +23,7 @@ library('lbfgs')
 
 ### Load user-defined functions
 source("functions/DataSim.R") 
+source("functions/New_DataSim.R") 
 source("functions/DataSim_noX.R") 
 source("functions/DataSim_interaction.R")
 source("functions/LassoFISTA.R") 
@@ -32,14 +33,14 @@ source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
 source("functions/ImmunizedATT.R")
 
-func_liste = c('DataSim','DataSim_noX','DataSim_interaction',
+func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigmoid',
                'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','ImmunizedATT',
                'gamma','gammagrad','prox','LeastSq','LeastSqgrad','LassoObj','Logitloss','Logitlossgrad') # list of functions for running parallel loop
 
 ### Monte Carlo Simulations -- setting up the function
 
 Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
-  print(paste('--- Simulations start : R=',R,', n=',N,', p=',P,' ---'))
+  print(paste('--- Simulations start : R =',R,', n =',N,', p =',P,' ---'))
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
@@ -50,6 +51,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   
   resPAR <- foreach(r = 1:R,.export=func_liste,.packages=c('lbfgs','MASS'),.combine='rbind', .multicombine=TRUE, .errorhandling = 'remove') %dopar% {
     ### 1. Generate data
+    ATT = 0
     if(Table=="base"){
       data <- DataSim(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
     } else if(Table=="noX") {
@@ -58,6 +60,9 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
       data <- DataSim(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=T)
     } else if(Table=="interaction"){
       data <- DataSim_interaction(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
+    } else if(Table=="newdgp"){
+      data <- New_DataSim(n=N,p=P,Ry=R2y,Rd=R2d)
+      ATT <- data$ATT
     }
     
     X=data$X; y=data$y; d=data$d
@@ -109,7 +114,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
     Convergence <- c(CAL$convergence,
                          ORT_WLS_L$convergence)
     
-    c(Estimate,AsySD,Convergence)
+    c(Estimate,AsySD,Convergence,ATT)
   }
   
   print('--- Simulations over ! ---')
@@ -119,6 +124,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   nb_e = 7 # nb of estimators
   
   Estimate = resPAR[,1:nb_e]; AsySD = resPAR[,(nb_e+1):(2*nb_e)]; Convergence =  resPAR[,(2*nb_e+1):((2*nb_e+2))]
+  ATT = mean(resPAR[,ncol(resPAR)])
   
   ## STEP B. POST-SIMULATION TREATMENT
   
@@ -133,11 +139,11 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   
   ### Compute bias, RMSE and Coverage Rate
   StatDisplay = data.frame()
-  StatDisplay[1:nb_e,"RMSE"]  = sqrt(apply(Estimate^2,2,mean,na.rm=T))
-  StatDisplay[1:nb_e,"bias"] = apply(Estimate,2,mean,na.rm=T)
+  StatDisplay[1:nb_e,"RMSE"]  = sqrt(apply((Estimate-ATT)^2,2,mean,na.rm=T))
+  StatDisplay[1:nb_e,"bias"] = apply((Estimate-ATT),2,mean,na.rm=T)
   
-  borne_sup = Estimate + qnorm(.975) * AsySD
-  borne_inf = Estimate - qnorm(.975) * AsySD
+  borne_sup = Estimate + qnorm(.975) * AsySD - ATT
+  borne_inf = Estimate - qnorm(.975) * AsySD - ATT
   StatDisplay[1:nb_e,"CoverageRate"] = apply((borne_sup>0)*(borne_inf<0),2,mean,na.rm=T) # zero if zero is not included in CI
   
   
@@ -155,7 +161,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
 ###########################
 ###########################
 
-DGP_style = "interaction" # modify here to generate each table
+DGP_style = "newdgp" # modify here to generate each table
 
 set.seed(99999)
 

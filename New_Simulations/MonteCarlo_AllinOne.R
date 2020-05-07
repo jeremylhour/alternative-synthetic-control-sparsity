@@ -93,14 +93,18 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
                           nopenset=c(1),RescaleY=F,
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
-    ### 6. Third step: ATT estimation
+    ### 6. Naive Oracle (for New_DGP)
+    Oracle <- CalibrationLasso(d,X[,c(1:10,(P-9):P)],c=0,maxIterPen=5e1,PostLasso=T,trace=F)
+    
+    ### 7. Third step: ATT estimation
     Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta,
                   ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$theta,
                   BCH$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta)
+                  ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta,
+                  ImmunizedATT(y,d,X[,c(1:10,(P-9):P)],Oracle$betaPL, Immunity=F)$theta)
     
     AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
@@ -108,7 +112,8 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
                ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$sigma,
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma)
+               ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma,
+               ImmunizedATT(y,d,X[,c(1:10,(P-9):P)],Oracle$betaPL, Immunity=F)$sigma)
     
     
     Convergence <- c(CAL$convergence,
@@ -121,7 +126,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   print(Sys.time()-t_start)
   stopCluster(cl)
   
-  nb_e = 7 # nb of estimators
+  nb_e = 8 # nb of estimators
   
   Estimate = resPAR[,1:nb_e]; AsySD = resPAR[,(nb_e+1):(2*nb_e)]; Convergence =  resPAR[,(2*nb_e+1):((2*nb_e+2))]
   ATT = mean(resPAR[,ncol(resPAR)])
@@ -147,8 +152,9 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.2,Table="base"){
   StatDisplay[1:nb_e,"CoverageRate"] = apply((borne_sup>0)*(borne_inf<0),2,mean,na.rm=T) # zero if zero is not included in CI
   
   
-  row.names(StatDisplay) <- c("Naive -- Calibration Lasso","Naive -- IPW Logit Lasso","Immunized -- Lasso",
-                              "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso")
+  row.names(StatDisplay) <- c("Naive -- Balancing Lasso","Naive -- IPW Logit Lasso","Immunized -- Lasso",
+                              "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso",
+                              "Naive Oracle")
   print(StatDisplay)
   
   return(list(Estimate = Estimate, AsySD = AsySD, StatDisplay = StatDisplay))
@@ -191,8 +197,9 @@ N50P100 <- Simu(N=50,P=100,Table=DGP_style)
 #########################
 #########################
 
-estim_names <- c("Naive Plug-In -- Calibration Lasso","Naive Plug-In -- Logit Lasso","Immunized -- Lasso",
-                 "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso")
+estim_names <- c("Naive Plug-In -- Balancing Lasso","Naive Plug-In -- Logit Lasso","Immunized -- Lasso",
+                 "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso",
+                 "Naive Oracle")
 nb_e = length(estim_names)
 
 res <- data.frame()

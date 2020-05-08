@@ -7,9 +7,9 @@
 ####################
 
 ### Set working directory
-setwd("R:/Simulations/BEAST") # R pour Jeremy, Z pour Marianne
-
+setwd("W:/1A_These/A. Research/beast_git/BEAST")
 rm(list=ls())
+
 set.seed(9081993)
 
 
@@ -17,6 +17,7 @@ set.seed(9081993)
 ### Load packages
 library("plyr")
 library("ggplot2")
+library("lbfgs")
 
 ### Load user-defined functions
 source("functions/CalibrationLasso.R")
@@ -24,6 +25,7 @@ source("functions/OrthogonalityReg.R")
 source("functions/ImmunizedATT.R")
 source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
+source("functions/LassoFISTA.R")
 
 ### min-max scale
 mMscale <- function(X){
@@ -214,18 +216,18 @@ Results[4,"Outcome"] <- length(ORT_WLS_PL$SHat)
 ### 6. Other competitors
 
 ### Logit Lasso estimate
-LOGIT <- LogitLasso(d,X,c=.6,
+LOGIT <- LogitLasso(d,X,c=1.1,
                     maxIterPen=1e5,PostLasso=T,trace=T)
 
 ### Linear Reg for Farrell (2015)
 FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
-                            c=.7*sd(y), nopenset=c(1), RescaleY=T,
+                            c=1.1*sd(y), nopenset=c(1), RescaleY=T,
                             maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=T,trace=T)
 
 ### Pre-selecting the same covariates
 ### NOT FAIR TO COMPARE WITH OUR PROCEDURE !!!
 FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
-                            c=.7*sd(y), nopenset=c(1,3,7,8), RescaleY=T,
+                            c=1.1*sd(y), nopenset=c(1,3,7,8), RescaleY=T,
                             maxIterPen=1e4,maxIterLasso=1e6,tolLasso=1e-6,PostLasso=T,trace=T)
 
 
@@ -256,7 +258,7 @@ Results[10,"PropScore"] <- length(LOGIT$SHat)
 Results[10,"Outcome"] <- 0
 
 ### BCH 2014
-BCH <- BCHDoubleSelec(y,d,X,cd=2,cy=1*sd(y),
+BCH <- BCHDoubleSelec(y,d,X,cd=1.1,cy=1.1*sd(y),
                       nopenset=c(1),RescaleY=T,
                       maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=T)
 

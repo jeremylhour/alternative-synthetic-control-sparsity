@@ -68,11 +68,11 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
     X=data$X; y=data$y; d=data$d
     
     ### 2. Calibration part
-    CAL <- CalibrationLasso(d,X,c=.45,maxIterPen=5e1,PostLasso=T,trace=F)
+    CAL <- CalibrationLasso(d,X,c=.5,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 3. Computes the orthogonality parameter, using method WLS Lasso
     ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
-                                           c=1.1, nopenset=c(1), RescaleY=F,
+                                           c=1.0001, nopenset=c(1), RescaleY=F,
                                            maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
     ### 3bis. Computes the orthogonality parameter, using method WLS Post-Lasso
@@ -85,7 +85,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
     
     ### 4 bis. Farrell (2015)
     FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
-                                c=1.1, nopenset=c(1), RescaleY=F,
+                                c=1.00001, nopenset=c(1), RescaleY=F,
                                 maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
     
     ### 5. BCH (2014) Estimate
@@ -155,7 +155,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
   row.names(StatDisplay) <- c("Naive -- Balancing Lasso","Naive -- IPW Logit Lasso","Immunized -- Lasso",
                               "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso",
                               "Oracle -- Balancing")
-  print(StatDisplay)
+  print(round(StatDisplay,digits=3))
   
   return(list(Estimate = Estimate, AsySD = AsySD, StatDisplay = StatDisplay))
 }

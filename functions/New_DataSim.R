@@ -24,19 +24,22 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   
   # Treatment selection coefficient
   gamma = rep(0,p)
-  for(j in 1:10){
+  for(j in 1:5){
     gamma[j] = 1*(-1)^(j) / j^2
   }
   
   # Outcome equation coefficients
-  mu = rep(0,p)
-  for(j in (p-9):p){
+  mu = gamma
+  for(j in (p-4):p){
     mu[j] = (-1)^(j+1) / (p-j+1)^2
   }
   
-  # Adjustment to match R.squared
+  # Adjustment to match R.squared in latent equation
   gamma = c(sqrt((1/t(gamma)%*%Sigma%*%gamma)*(Rd/(1-Rd))))*gamma
-  mu = c(sqrt((1/t(mu)%*%Sigma%*%mu)*(Ry/(1-Ry))))*mu
+  
+  # Adjustment to match R.squared of Y_0
+  c_mu = (Ry/(2*(1-Ry)*(t(mu)%*%Sigma%*%mu)^4))^(1/8)
+  mu = c(c_mu)*mu
   
   # Simulating the DGP
   X = mvrnorm(n=n, mu=rep(0,p), Sigma)

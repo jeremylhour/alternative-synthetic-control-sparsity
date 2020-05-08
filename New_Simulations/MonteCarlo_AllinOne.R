@@ -89,12 +89,12 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
                                 maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
     
     ### 5. BCH (2014) Estimate
-    BCH <- BCHDoubleSelec(y,d,X,cd=.95,cy=2,
+    BCH <- BCHDoubleSelec(y,d,X,cd=.5,cy=.5,
                           nopenset=c(1),RescaleY=F,
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
     ### 6. Naive Oracle (for New_DGP)
-    ORACLE <- CalibrationLasso(d,X[,1:11],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
+    ORACLE <- CalibrationLasso(d,X[,1:6],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
     Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
@@ -104,7 +104,7 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
                   BCH$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X[,1:11],ORACLE$betaLasso, Immunity=F)$theta)
+                  ImmunizedATT(y,d,X[,1:6],ORACLE$betaLasso, Immunity=F)$theta)
     
     AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
@@ -113,7 +113,7 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X[,1:11],ORACLE$betaLasso, Immunity=F)$sigma)
+               ImmunizedATT(y,d,X[,1:6],ORACLE$betaLasso, Immunity=F)$sigma)
     
     
     Convergence <- c(CAL$convergence,
@@ -169,7 +169,7 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
 
 DGP_style = "newdgp" # modify here to generate each table
 
-set.seed(99999)
+set.seed(12071990)
 
 N500P50 <- Simu(N=500,P=50,Table=DGP_style)
 N500P100 <- Simu(N=500,P=100,Table=DGP_style)

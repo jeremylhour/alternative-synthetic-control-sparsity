@@ -41,7 +41,6 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
   ### Type of method to compute weights
   if(method == "WLSLasso"){ 
     W=as.vector((1-d)*exp(X%*%beta))
-    W[is.na(W)]=0
   } else if(method == "LinearOutcome"){
     W=as.vector((1-d)*(sum(d)/sum(1-d)))
     }

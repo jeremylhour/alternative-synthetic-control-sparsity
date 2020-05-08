@@ -39,7 +39,7 @@ func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigm
 
 ### Monte Carlo Simulations -- setting up the function
 
-Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
+Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
   print(paste('--- Simulations start : R =',R,', n =',N,', p =',P,' ---'))
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
@@ -68,7 +68,7 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
     X=data$X; y=data$y; d=data$d
     
     ### 2. Calibration part
-    CAL <- CalibrationLasso(d,X,c=.5,maxIterPen=5e1,PostLasso=T,trace=F)
+    CAL <- CalibrationLasso(d,X,c=.45,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 3. Computes the orthogonality parameter, using method WLS Lasso
     ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
@@ -89,12 +89,12 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
                                 maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
     
     ### 5. BCH (2014) Estimate
-    BCH <- BCHDoubleSelec(y,d,X,cd=.5,cy=.5,
+    BCH <- BCHDoubleSelec(y,d,X,cd=1.0001,cy=1.0001,
                           nopenset=c(1),RescaleY=F,
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
     ### 6. Naive Oracle (for New_DGP)
-    ORACLE <- CalibrationLasso(d,X[,1:6],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
+    ORACLE <- CalibrationLasso(d,X[,1:11],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
     Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
@@ -104,7 +104,7 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
                   BCH$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X[,1:6],ORACLE$betaLasso, Immunity=F)$theta)
+                  ImmunizedATT(y,d,X[,1:11],ORACLE$betaLasso, Immunity=F)$theta)
     
     AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
@@ -113,7 +113,7 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X[,1:6],ORACLE$betaLasso, Immunity=F)$sigma)
+               ImmunizedATT(y,d,X[,1:11],ORACLE$betaLasso, Immunity=F)$sigma)
     
     
     Convergence <- c(CAL$convergence,
@@ -139,7 +139,7 @@ Simu <- function(N,P,R=10000,R2y=.5,R2d=.3,Table="base"){
   Estimate = Estimate[valid,]
   AsySD = AsySD[valid,]
   
-  print(paste('--- Convergence pct : ',mean(valid),' ---'))
+  print(paste('--- Convergence pct : ',round(sum(valid)/R,digits=3),' ---'))
   
   
   ### Compute bias, RMSE and Coverage Rate

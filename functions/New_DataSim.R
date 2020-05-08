@@ -24,33 +24,35 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   
   # Treatment selection coefficient
   gamma = rep(0,p)
-  for(j in 1:5){
-    gamma[j] = 1*(-1)^(j) / j^2
+  for(j in 1:10){
+    #gamma[j] = 1*(-1)^(j) / j^2
+    gamma[j] = 1 / j^2
   }
   
   # Outcome equation coefficients
   mu = gamma
-  for(j in (p-4):p){
+  for(j in (p-9):p){
     mu[j] = (-1)^(j+1) / (p-j+1)^2
   }
   
   # Adjustment to match R.squared in latent equation
-  gamma = c(sqrt((1/t(gamma)%*%Sigma%*%gamma)*(Rd/(1-Rd))))*gamma
+  c_gamma = c(sqrt((1/t(gamma)%*%Sigma%*%gamma)*(Rd/(1-Rd))))
+  gamma = c_gamma*gamma
   
   # Adjustment to match R.squared of Y_0
-  c_mu = (Ry/(2*(1-Ry)*(t(mu)%*%Sigma%*%mu)^4))^(1/8)
-  mu = c(c_mu)*mu
+  c_mu = c((Ry/(2*(1-Ry)*(t(mu)%*%Sigma%*%mu)^4))^(1/8))
   
   # Simulating the DGP
   X = mvrnorm(n=n, mu=rep(0,p), Sigma)
+
   
   d = as.numeric(runif(n) < sigmoid(X%*%gamma))
   
-  y = (X%*%mu)^2 + d*(X%*%gamma) + rnorm(n)
+  y = (X%*%(c_mu*mu))^2 + d*(X%*%gamma) + rnorm(n)
   
   # Compute the ATT
   Z = rnorm(5000000, sd=t(gamma)%*%Sigma%*%gamma)
-  ATT = mean(Z*sigmoid(Z))/mean(sigmoid(Z))
+  ATT = mean(Z*sigmoid(Z)/c_gamma)/mean(sigmoid(Z))
   
   if(Intercept) X <- cbind(rep(1,n),X)
   

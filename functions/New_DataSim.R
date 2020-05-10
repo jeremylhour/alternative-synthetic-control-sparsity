@@ -25,8 +25,8 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   # Treatment selection coefficient
   gamma = rep(0,p)
   for(j in 1:10){
-    #gamma[j] = 1*(-1)^(j) / j^2
-    gamma[j] = 1 / j^2
+    gamma[j] = 1*(-1)^(j) / j^2
+    #gamma[j] = 1 / j^2
   }
   
   # Outcome equation coefficients
@@ -40,7 +40,9 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   gamma = c_gamma*gamma
   
   # Adjustment to match R.squared of Y_0
-  c_mu = c((Ry/(2*(1-Ry)*(t(mu)%*%Sigma%*%mu)^4))^(1/8))
+  #c_mu = c(sqrt((1/t(gamma)%*%Sigma%*%gamma)*(Ry/(1-Ry))))
+  #c_mu = c((Ry/(2*(1-Ry)*(t(mu)%*%Sigma%*%mu)^4))^(1/8))
+  c_mu = sqrt(log(Ry/(1-Ry))/(2*t(mu)%*%Sigma%*%mu))
   
   # Simulating the DGP
   X = mvrnorm(n=n, mu=rep(0,p), Sigma)
@@ -48,7 +50,9 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   
   d = as.numeric(runif(n) < sigmoid(X%*%gamma))
   
-  y = (X%*%(c_mu*mu))^2 + d*(X%*%gamma) + rnorm(n)
+  #y = (X%*%(c_mu*mu))^2 + d*(X%*%gamma) + rnorm(n)
+  #y = X%*%(c_mu*mu) + d*(X%*%gamma) + rnorm(n)
+  y = exp(X%*%(c_mu*mu)) + d*(X%*%gamma) + rnorm(n)
   
   # Compute the ATT
   Z = rnorm(5000000, sd=t(gamma)%*%Sigma%*%gamma)
@@ -59,8 +63,8 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   return(list(X=X,
               y=y,
               d=d,
-              mu=mu,
-              gamma=gamma,
+              mu=c_mu*mu,
+              gamma=c_gamma*gamma,
               ATT=ATT))
 }
 

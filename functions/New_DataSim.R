@@ -46,7 +46,8 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   mu = c(c_mu)*mu
   
   # Adjustment of heterogeneity
-  eta = sqrt( (exp(t(mu)%*%Sigma%*%mu) -1)*exp(t(mu)%*%Sigma%*%mu)/(2*t(gamma_0)%*%Sigma%*%gamma_0) )
+  #eta = sqrt( (exp(t(mu)%*%Sigma%*%mu) -1)*exp(t(mu)%*%Sigma%*%mu)/(4*t(gamma_0)%*%Sigma%*%gamma_0) )
+  eta = 1
   
   # Simulating the DGP
   X = mvrnorm(n=n, mu=rep(0,p), Sigma)
@@ -58,8 +59,8 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   y = exp(X%*%mu) + c(eta)*d*(X%*%gamma_0) + rnorm(n)
   
   # Compute the ATT
-  Z = rnorm(5000000, sd=t(gamma_0)%*%Sigma%*%gamma_0)
-  ATT = mean(Z*sigmoid(Z))/mean(sigmoid(Z))
+  Z = rnorm(100000, sd=c(eta)*sqrt(t(gamma_0)%*%Sigma%*%gamma_0))
+  ATT = mean(c(eta)*Z*sigmoid(Z))/mean(sigmoid(Z))
   
   if(Intercept) X <- cbind(rep(1,n),X)
   

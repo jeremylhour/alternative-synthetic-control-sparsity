@@ -1,4 +1,4 @@
-### Parametric Alternative to SYnthetic Control: Monte Carlo Simulation
+### Parametric Alternative to Synthetic Control: Monte Carlo Simulation
 ### reports RMSE, bias and coverage rate, also parallelized
 ### Jeremy L'Hour
 ### 14/02/2020
@@ -134,6 +134,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
   
   Estimate = resPAR[,1:nb_e]; AsySD = resPAR[,(nb_e+1):(2*nb_e)]; Convergence =  resPAR[,(2*nb_e+1):((2*nb_e+2))]
   ATT = mean(resPAR[,ncol(resPAR)])
+  #ATT = resPAR[,ncol(resPAR)]
   
   ## STEP B. POST-SIMULATION TREATMENT
   
@@ -173,7 +174,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
 
 DGP_style = "newdgp" # modify here to generate each table
 
-set.seed(12071990)
+set.seed(9081993)
 
 N500P50 <- Simu(N=500,P=50,Table=DGP_style)
 N500P100 <- Simu(N=500,P=100,Table=DGP_style)

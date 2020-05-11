@@ -34,8 +34,7 @@ CalibrationLasso <- function(d,X,c=1.1,maxIterPen=100,PostLasso=F,trace=F){
   ### First step: Lasso
   
   # Overall penalty level
-  # g <- .1/log(max(p,n))
-  g <- 10/log(max(p,n))
+  g <- .1/log(max(p,n))
   lambda <- c*qnorm(1-.5*g/p)/sqrt(n)
   
   # Penalty loadings: get a preliminary estimator

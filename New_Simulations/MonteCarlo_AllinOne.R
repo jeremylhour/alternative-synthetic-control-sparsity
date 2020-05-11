@@ -24,6 +24,7 @@ library('lbfgs')
 ### Load user-defined functions
 source("functions/DataSim.R") 
 source("functions/New_DataSim.R") 
+source("functions/DataSim_New2.R") 
 source("functions/DataSim_noX.R") 
 source("functions/DataSim_interaction.R")
 source("functions/LassoFISTA.R") 
@@ -33,7 +34,7 @@ source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
 source("functions/ImmunizedATT.R")
 
-func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigmoid',
+func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigmoid', 'DataSim_New2',
                'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','ImmunizedATT',
                'gamma','gammagrad','prox','LeastSq','LeastSqgrad','LassoObj','Logitloss','Logitlossgrad') # list of functions for running parallel loop
 
@@ -63,38 +64,41 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
     } else if(Table=="newdgp"){
       data <- New_DataSim(n=N,p=P,Ry=R2y,Rd=R2d)
       ATT <- data$ATT
+    } else if(Table=="newdgp2"){
+      data <- DataSim_New2(n=N,p=P,Ry=R2y,Rd=R2d)
+      ATT <- data$ATT
     }
     
     X=data$X; y=data$y; d=data$d
     
     ### 2. Calibration part
-    CAL <- CalibrationLasso(d,X,c=.5,maxIterPen=5e1,PostLasso=T,trace=F)
+    CAL <- CalibrationLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 3. Computes the orthogonality parameter, using method WLS Lasso
     ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
-                                           c=1.0001, nopenset=c(1), RescaleY=F,
+                                           c=1.001, nopenset=c(1), RescaleY=F,
                                            maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
     ### 3bis. Computes the orthogonality parameter, using method WLS Post-Lasso
     ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
-                                  c=1.1, nopenset=c(1), RescaleY=F,
+                                  c=1.001, nopenset=c(1), RescaleY=F,
                                   maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
     
     ### 4. Logit Lasso estimate
-    LOGIT <- LogitLasso(d,X,c=.5,maxIterPen=5e1,PostLasso=T,trace=F)
+    LOGIT <- LogitLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 4 bis. Farrell (2015)
     FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
-                                c=1.00001, nopenset=c(1), RescaleY=F,
+                                c=1.001, nopenset=c(1), RescaleY=F,
                                 maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
     
     ### 5. BCH (2014) Estimate
-    BCH <- BCHDoubleSelec(y,d,X,cd=1.0001,cy=1.0001,
+    BCH <- BCHDoubleSelec(y,d,X,cd=1.001,cy=1.001,
                           nopenset=c(1),RescaleY=F,
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
     ### 6. Naive Oracle (for New_DGP)
-    ORACLE <- CalibrationLasso(d,X[,1:11],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
+    ORACLE <- CalibrationLasso(d,X[,c(1:11,(P-8):(P+1))],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
     Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
@@ -104,7 +108,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
                   BCH$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X[,1:11],ORACLE$betaLasso, Immunity=F)$theta)
+                  ImmunizedATT(y,d,X[,c(1:11,(P-8):(P+1))],ORACLE$betaLasso, Immunity=F)$theta)
     
     AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
@@ -113,7 +117,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X[,1:11],ORACLE$betaLasso, Immunity=F)$sigma)
+               ImmunizedATT(y,d,X[,c(1:11,(P-8):(P+1))],ORACLE$betaLasso, Immunity=F)$sigma)
     
     
     Convergence <- c(CAL$convergence,

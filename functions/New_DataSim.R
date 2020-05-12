@@ -40,8 +40,6 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   gamma_0 = c_gamma*gamma_0
   
   # Adjustment to match R.squared of Y_0
-  #c_mu = c(sqrt((1/t(gamma)%*%Sigma%*%gamma)*(Ry/(1-Ry))))
-  #c_mu = c((Ry/(2*(1-Ry)*(t(mu)%*%Sigma%*%mu)^4))^(1/8))
   c_mu = sqrt(log(Ry/(1-Ry))/(2*t(mu)%*%Sigma%*%mu))
   mu = c(c_mu)*mu
   
@@ -54,8 +52,6 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   
   d = as.numeric(runif(n) < sigmoid(X%*%gamma_0))
   
-  #y = (X%*%(c_mu*mu))^2 + d*(X%*%gamma) + rnorm(n)
-  #y = X%*%(c_mu*mu) + d*(X%*%gamma) + rnorm(n)
   y = exp(X%*%mu) + c(eta)*d*(X%*%gamma_0) + rnorm(n)
   
   # Compute the ATT

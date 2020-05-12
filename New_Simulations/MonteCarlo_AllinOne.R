@@ -33,9 +33,10 @@ source("functions/OrthogonalityReg.R")
 source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
 source("functions/ImmunizedATT.R")
+source("functions/LowDim_ATT.R")
 
 func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigmoid', 'DataSim_New2',
-               'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','ImmunizedATT',
+               'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','ImmunizedATT','LowDim_ATT',
                'gamma','gammagrad','prox','LeastSq','LeastSqgrad','LassoObj','Logitloss','Logitlossgrad') # list of functions for running parallel loop
 
 ### Monte Carlo Simulations -- setting up the function
@@ -98,7 +99,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
     ### 6. Naive Oracle (for New_DGP)
-    ORACLE <- CalibrationLasso(d,X[,c(1:11,(P-8):(P+1))],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
+    ORACLE <- CalibrationLasso(d,X[,c(1:11)],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
     Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
@@ -108,7 +109,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
                   BCH$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X[,c(1:11,(P-8):(P+1))],ORACLE$betaLasso, Immunity=F)$theta)
+                  LowDim_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$theta)
     
     AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
@@ -117,7 +118,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X[,c(1:11,(P-8):(P+1))],ORACLE$betaLasso, Immunity=F)$sigma)
+               LowDim_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$sigma)
     
     
     Convergence <- c(CAL$convergence,
@@ -292,3 +293,8 @@ for(bloc in 1:4){
 write.table(res_colored, file = paste("New_Simulations/ColorTable_",DGP_style,".txt",sep=''), append = FALSE, quote = FALSE, sep = " & ",
             eol = paste(" \\\\ \n"), na = "--", dec = ".", row.names = T,
             col.names = T)
+
+N5000P50 <- Simu(N=5000,P=50,Table=DGP_style)
+N5000P100 <- Simu(N=5000,P=100,Table=DGP_style)
+N5000P200 <- Simu(N=5000,P=200,Table=DGP_style)
+N5000P500 <- Simu(N=5000,P=500,Table=DGP_style)

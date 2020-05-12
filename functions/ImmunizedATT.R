@@ -16,11 +16,7 @@
 #' @author Jeremy Lhour
 
 ImmunizedATT <- function(y,d,X,beta,mu=rep(0,ncol(X)),Immunity=T){
-  
-  d <- as.matrix(d)
-  y <- as.matrix(y)
-  X <- as.matrix(X)
-  
+  d <- as.matrix(d); y <- as.matrix(y); X <- as.matrix(X)
   eps <- y
   
   if(Immunity) eps <- y - X%*%mu 

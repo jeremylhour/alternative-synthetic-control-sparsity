@@ -34,9 +34,10 @@ source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
 source("functions/ImmunizedATT.R")
 source("functions/LowDim_ATT.R")
+source("functions/Naive_ATT.R")
 
 func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigmoid', 'DataSim_New2',
-               'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','ImmunizedATT','LowDim_ATT',
+               'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','ImmunizedATT','LowDim_ATT', 'Naive_ATT',
                'gamma','gammagrad','prox','LeastSq','LeastSqgrad','LassoObj','Logitloss','Logitlossgrad') # list of functions for running parallel loop
 
 ### Monte Carlo Simulations -- setting up the function
@@ -52,7 +53,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
   t_start <- Sys.time()
   
   resPAR <- foreach(r = 1:R,.export=func_liste,.packages=c('lbfgs','MASS'),.combine='rbind', .multicombine=TRUE, .errorhandling = 'remove') %dopar% {
-    ### 1. Generate data
+    ### 0. Generate data
     ATT = 0
     if(Table=="base"){
       data <- DataSim(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
@@ -72,38 +73,38 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
     
     X=data$X; y=data$y; d=data$d
     
-    ### 2. Calibration part
+    ### 1. Compute Balancing parameter
     CAL <- CalibrationLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
     
-    ### 3. Computes the orthogonality parameter, using method WLS Lasso
+    ### 2. Computes the orthogonality parameter, using method WLS Lasso
     ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
                                            c=1.001, nopenset=c(1), RescaleY=F,
                                            maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
-    ### 3bis. Computes the orthogonality parameter, using method WLS Post-Lasso
+    ### 2bis. Computes the orthogonality parameter, using method WLS Post-Lasso
     ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
                                   c=1.001, nopenset=c(1), RescaleY=F,
                                   maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
     
-    ### 4. Logit Lasso estimate
+    ### 3. Logit Lasso
     LOGIT <- LogitLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
     
-    ### 4 bis. Farrell (2015)
+    ### 4bis. Orthogonality param for Farrell (2015)
     FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
                                 c=1.001, nopenset=c(1), RescaleY=F,
                                 maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
     
-    ### 5. BCH (2014) Estimate
+    ### 5. BCH (2014) double post-selection
     BCH <- BCHDoubleSelec(y,d,X,cd=1.001,cy=1.001,
                           nopenset=c(1),RescaleY=F,
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
-    ### 6. Naive Oracle (for New_DGP)
+    ### 6. Oracle
     ORACLE <- CalibrationLasso(d,X[,c(1:11)],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
-    Estimate <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$theta,
-                  ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta,
+    Estimate <- c(Naive_ATT(y,d,X,CAL$betaLasso)$theta,
+                  Naive_ATT(y,d,X,LOGIT$betaLasso)$theta,
                   ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$theta,
                   ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$theta,
                   BCH$theta,
@@ -111,15 +112,14 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
                   ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta,
                   LowDim_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$theta)
     
-    AsySD <- c(ImmunizedATT(y,d,X,CAL$betaLasso, Immunity=F)$sigma,
-               ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma,
+    AsySD <- c(Naive_ATT(y,d,X,CAL$betaLasso)$sigma,
+               Naive_ATT(y,d,X,LOGIT$betaLasso)$sigma,
                ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$sigma,
                BCH$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
                ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma,
                LowDim_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$sigma)
-    
     
     Convergence <- c(CAL$convergence,
                          ORT_WLS_L$convergence)
@@ -135,7 +135,6 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
   
   Estimate = resPAR[,1:nb_e]; AsySD = resPAR[,(nb_e+1):(2*nb_e)]; Convergence =  resPAR[,(2*nb_e+1):((2*nb_e+2))]
   ATT = mean(resPAR[,ncol(resPAR)])
-  #ATT = resPAR[,ncol(resPAR)]
   
   ## STEP B. POST-SIMULATION TREATMENT
   
@@ -194,6 +193,11 @@ N100P200 <- Simu(N=100,P=200,Table=DGP_style)
 N50P50 <- Simu(N=50,P=50,Table=DGP_style)
 N50P100 <- Simu(N=50,P=100,Table=DGP_style)
 
+N1000P50 <- Simu(N=1000,P=50,Table=DGP_style)
+N1000P100 <- Simu(N=1000,P=100,Table=DGP_style)
+N1000P200 <- Simu(N=1000,P=200,Table=DGP_style)
+N1000P500 <- Simu(N=1000,P=500,Table=DGP_style)
+
 
 #save.image("//ulysse/users/JL.HOUR/1A_These/sim_output")
 
@@ -210,17 +214,18 @@ nb_e = length(estim_names)
 
 res <- data.frame()
 
-res[1:(4*nb_e),1:3] <- rbind(N50P50$StatDisplay,N100P50$StatDisplay,N200P50$StatDisplay,N500P50$StatDisplay) # p = 50
-res[1:(4*nb_e),4:6] <- rbind(N50P100$StatDisplay,N100P100$StatDisplay,N200P100$StatDisplay,N500P100$StatDisplay) # p = 100
-res[(2*nb_e+1):(4*nb_e),7:9] <- rbind(N200P200$StatDisplay,N500P200$StatDisplay) # p = 200
-res[(2*nb_e+1):(4*nb_e),10:12] <- rbind(N200P500$StatDisplay,N500P500$StatDisplay) # p = 500
+res[1:(5*nb_e),1:3] <- rbind(N50P50$StatDisplay,N100P50$StatDisplay,N200P50$StatDisplay,N500P50$StatDisplay, N1000P50$StatDisplay) # p = 50
+res[1:(5*nb_e),4:6] <- rbind(N50P100$StatDisplay,N100P100$StatDisplay,N200P100$StatDisplay,N500P100$StatDisplay, N1000P100$StatDisplay) # p = 100
+res[(2*nb_e+1):(5*nb_e),7:9] <- rbind(N200P200$StatDisplay,N500P200$StatDisplay, N1000P200$StatDisplay) # p = 200
+res[(2*nb_e+1):(5*nb_e),10:12] <- rbind(N200P500$StatDisplay,N500P500$StatDisplay, N1000P500$StatDisplay) # p = 500
 
 res <- round(res,digits=3)
 
 row.names(res) <- c(paste('n=50',estim_names),
                     paste('n=100',estim_names),
                     paste('n=200',estim_names),
-                    paste('n=500',estim_names))
+                    paste('n=500',estim_names),
+                    paste('n=1000'),estim_names)
 
 names(res) <- rep(c("RMSE","Bias","Cov. Rate"),4)
 
@@ -293,8 +298,3 @@ for(bloc in 1:4){
 write.table(res_colored, file = paste("New_Simulations/ColorTable_",DGP_style,".txt",sep=''), append = FALSE, quote = FALSE, sep = " & ",
             eol = paste(" \\\\ \n"), na = "--", dec = ".", row.names = T,
             col.names = T)
-
-N5000P50 <- Simu(N=5000,P=50,Table=DGP_style)
-N5000P100 <- Simu(N=5000,P=100,Table=DGP_style)
-N5000P200 <- Simu(N=5000,P=200,Table=DGP_style)
-N5000P500 <- Simu(N=5000,P=500,Table=DGP_style)

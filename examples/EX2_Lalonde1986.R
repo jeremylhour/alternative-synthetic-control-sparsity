@@ -23,6 +23,7 @@ library("lbfgs")
 source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
 source("functions/ImmunizedATT.R")
+source("functions/Naive_ATT.R")
 source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
 source("functions/LassoFISTA.R")
@@ -186,8 +187,8 @@ Results <- data.frame(Estimator=character(),
                       stringsAsFactors=FALSE)
 ### 1. Naive Lasso
 Results[1,"Estimator"] <- c("Naive Plug-In, Lasso")
-Results[1,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)$theta
-Results[1,"asymptoticsd"] <-  ImmunizedATT(y,d,X,CAL$betaLasso,rep(0,p), Immunity=F)$sigma
+Results[1,"ATT"] <- Naive_ATT(y,d,X,CAL$betaLasso)$theta
+Results[1,"asymptoticsd"] <-  Naive_ATT(y,d,X,CAL$betaLasso)$sigma
 Results[1,"PropScore"] <- length(CAL$SHat)
 Results[1,"Outcome"] <- 0
 
@@ -200,8 +201,8 @@ Results[2,"Outcome"] <- length(ORT_WLS$SHat)
 
 ### 3. Naive Post-Lasso
 Results[3,"Estimator"] <- c("Naive Plug-In, Post-Lasso")
-Results[3,"ATT"] <- ImmunizedATT(y,d,X,CAL$betaPL,rep(0,p), Immunity=F)$theta
-Results[3,"asymptoticsd"] <- ImmunizedATT(y,d,X,CAL$betaPL,rep(0,p), Immunity=F)$sigma
+Results[3,"ATT"] <- Naive_ATT(y,d,X,CAL$betaPL)$theta
+Results[3,"asymptoticsd"] <- Naive_ATT(y,d,X,CAL$betaPL)$sigma
 Results[3,"PropScore"] <- length(CAL$SHat)
 Results[3,"Outcome"] <- 0
 
@@ -246,14 +247,14 @@ Results[6,"Outcome"] <- length(FARRELL$SHat)
 
 ### 8. Inverse propensity weighting
 Results[9,"Estimator"] <- c("IPW, Lasso")
-Results[9,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$theta
-Results[9,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaLasso, Immunity=F)$sigma
+Results[9,"ATT"] <- Naive_ATT(y,d,X,LOGIT$betaLasso)$theta
+Results[9,"asymptoticsd"] <- Naive_ATT(y,d,X,LOGIT$betaLasso)$sigma
 Results[9,"PropScore"] <- length(LOGIT$SHat)
 Results[9,"Outcome"] <- 0
 
 Results[10,"Estimator"] <- c("IPW, Post-Lasso")
-Results[10,"ATT"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$theta
-Results[10,"asymptoticsd"] <- ImmunizedATT(y,d,X,LOGIT$betaPL, Immunity=F)$sigma
+Results[10,"ATT"] <- Naive_ATT(y,d,X,LOGIT$betaPL)$theta
+Results[10,"asymptoticsd"] <- Naive_ATT(y,d,X,LOGIT$betaPL)$sigma
 Results[10,"PropScore"] <- length(LOGIT$SHat)
 Results[10,"Outcome"] <- 0
 

@@ -1,8 +1,8 @@
-#' Function to compute beta, the covariate balancing weights
+#' Function to compute beta, the covariate balancing parameter
 #' 
 #' First step of the BEAST estimator. Uses the lbfgs function to perform L1-penalised minimization.
-#'  A constant must be included as the first column in X.
-#'  Last edited: 18 avril 2016.
+#' A constant must be included as the first column in X and is not penalized.
+#' Last edited: 12 mai 2020.
 #' 
 #' @param d Treatment indicator.
 #' @param X Matrix of covariates.
@@ -20,7 +20,7 @@
 #' @return nbIter Number of iterations for penalty level estimation.
 #' @return convergence 0 if convergence, -999 if not.
 #' 
-#' @author Jeremy Lhour
+#' @author Jeremy L'Hour
 
 
 CalibrationLasso <- function(d,X,c=1.1,maxIterPen=100,PostLasso=F,trace=F){
@@ -34,7 +34,7 @@ CalibrationLasso <- function(d,X,c=1.1,maxIterPen=100,PostLasso=F,trace=F){
   ### First step: Lasso
   
   # Overall penalty level
-  g <- .1/log(max(p,n))
+  g <- 10/sqrt(log(max(p,n)))
   lambda <- c*qnorm(1-.5*g/p)/sqrt(n)
   
   # Penalty loadings: get a preliminary estimator

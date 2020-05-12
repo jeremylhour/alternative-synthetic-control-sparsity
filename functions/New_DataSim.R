@@ -26,7 +26,6 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   gamma_0 = rep(0,p)
   for(j in 1:10){
     gamma_0[j] = 1*(-1)^(j) / j^2
-    #gamma[j] = 1 / j^2
   }
   
   # Outcome equation coefficients
@@ -44,8 +43,7 @@ New_DataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
   mu = c(c_mu)*mu
   
   # Adjustment of heterogeneity
-  #eta = sqrt( (exp(t(mu)%*%Sigma%*%mu) -1)*exp(t(mu)%*%Sigma%*%mu)/(4*t(gamma_0)%*%Sigma%*%gamma_0) )
-  eta = 1
+  eta = sqrt( (exp(t(mu)%*%Sigma%*%mu) -1)*exp(t(mu)%*%Sigma%*%mu)/(4*t(gamma_0)%*%Sigma%*%gamma_0) )
   
   # Simulating the DGP
   X = mvrnorm(n=n, mu=rep(0,p), Sigma)

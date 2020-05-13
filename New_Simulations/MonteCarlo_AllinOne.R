@@ -214,10 +214,23 @@ nb_e = length(estim_names)
 
 res <- data.frame()
 
-res[1:(5*nb_e),1:3] <- rbind(N50P50$StatDisplay,N100P50$StatDisplay,N200P50$StatDisplay,N500P50$StatDisplay, N1000P50$StatDisplay) # p = 50
-res[1:(5*nb_e),4:6] <- rbind(N50P100$StatDisplay,N100P100$StatDisplay,N200P100$StatDisplay,N500P100$StatDisplay, N1000P100$StatDisplay) # p = 100
-res[(2*nb_e+1):(5*nb_e),7:9] <- rbind(N200P200$StatDisplay,N500P200$StatDisplay, N1000P200$StatDisplay) # p = 200
-res[(2*nb_e+1):(5*nb_e),10:12] <- rbind(N200P500$StatDisplay,N500P500$StatDisplay, N1000P500$StatDisplay) # p = 500
+res[1:(5*nb_e),1:3] <- rbind(N50P50$StatDisplay,
+                             N100P50$StatDisplay,
+                             N200P50$StatDisplay,
+                             N500P50$StatDisplay,
+                             N1000P50$StatDisplay) # p = 50
+res[1:(5*nb_e),4:6] <- rbind(N50P100$StatDisplay,
+                             N100P100$StatDisplay,
+                             N200P100$StatDisplay,
+                             N500P100$StatDisplay,
+                             N1000P100$StatDisplay) # p = 100
+res[(nb_e+1):(5*nb_e),7:9] <- rbind(N100P200$StatDisplay,
+                                    N200P200$StatDisplay,
+                                    N500P200$StatDisplay,
+                                    N1000P200$StatDisplay) # p = 200
+res[(2*nb_e+1):(5*nb_e),10:12] <- rbind(N200P500$StatDisplay,
+                                        N500P500$StatDisplay,
+                                        N1000P500$StatDisplay) # p = 500
 
 res <- round(res,digits=3)
 

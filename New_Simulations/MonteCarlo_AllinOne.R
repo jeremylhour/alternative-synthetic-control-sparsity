@@ -32,13 +32,11 @@ source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
 source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
-source("functions/ImmunizedATT.R")
-source("functions/LowDim_ATT.R")
-source("functions/Naive_ATT.R")
+source("functions/Compute_ATT.R")
 
 func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigmoid', 'DataSim_New2',
-               'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','ImmunizedATT','LowDim_ATT', 'Naive_ATT',
-               'gamma','gammagrad','prox','LeastSq','LeastSqgrad','LassoObj','Logitloss','Logitlossgrad') # list of functions for running parallel loop
+               'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','Compute_ATT',
+               'gamma','gammagrad','prox','LeastSq','LeastSqgrad','LassoObj','Logitloss','Logitlossgrad','sigmoid') # list of functions for running parallel loop
 
 ### Monte Carlo Simulations -- setting up the function
 
@@ -103,26 +101,26 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
     ORACLE <- CalibrationLasso(d,X[,c(1:11)],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
-    Estimate <- c(Naive_ATT(y,d,X,CAL$betaLasso)$theta,
-                  Naive_ATT(y,d,X,LOGIT$betaLasso)$theta,
-                  ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$theta,
+    Estimate <- c(Compute_ATT(y,d,X,CAL$betaLasso)$theta,
+                  Compute_ATT(y,d,X,LOGIT$betaLasso)$theta,
+                  Compute_ATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso)$theta,
+                  Compute_ATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL)$theta,
                   BCH$theta,
-                  ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$theta,
-                  ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$theta,
-                  LowDim_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$theta)
+                  Compute_ATT(y,d,X,LOGIT$betaLasso,FARRELL$muLasso)$theta,
+                  Compute_ATT(y,d,X,LOGIT$betaPL,FARRELL$muPL)$theta,
+                  Compute_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$theta)
     
-    AsySD <- c(Naive_ATT(y,d,X,CAL$betaLasso)$sigma,
-               Naive_ATT(y,d,X,LOGIT$betaLasso)$sigma,
-               ImmunizedATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL, Immunity=T)$sigma,
+    AsySD <- c(Compute_ATT(y,d,X,CAL$betaLasso)$sigma,
+               Compute_ATT(y,d,X,LOGIT$betaLasso)$sigma,
+               Compute_ATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso)$sigma,
+               Compute_ATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL)$sigma,
                BCH$sigma,
-               ImmunizedATT(y,d,X,LOGIT$betaLasso, FARRELL$muLasso, Immunity=T)$sigma,
-               ImmunizedATT(y,d,X,LOGIT$betaPL, FARRELL$muPL, Immunity=T)$sigma,
-               LowDim_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$sigma)
+               Compute_ATT(y,d,X,LOGIT$betaLasso,FARRELL$muLasso)$sigma,
+               Compute_ATT(y,d,X,LOGIT$betaPL,FARRELL$muPL)$sigma,
+               Compute_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$sigma)
     
     Convergence <- c(CAL$convergence,
-                         ORT_WLS_L$convergence)
+                     ORT_WLS_L$convergence)
     
     c(Estimate,AsySD,Convergence,ATT)
   }
@@ -137,8 +135,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
   ATT = mean(resPAR[,ncol(resPAR)])
   
   ## STEP B. POST-SIMULATION TREATMENT
-  
-  # Post-simulation treatment
+
   # Discard all draws which did not converge
   valid = (Convergence[,1] == 0 & Convergence[,2]==0)
   Estimate = Estimate[valid,]
@@ -158,7 +155,7 @@ Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
   
   
   row.names(StatDisplay) <- c("Naive -- Balancing Lasso","Naive -- IPW Logit Lasso","Immunized -- Lasso",
-                              "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso",
+                              "Immunized -- Post-Lasso","BCH 2014","Farrell -- Lasso","Farrell -- Post-Lasso",
                               "Oracle -- Balancing")
   print(round(StatDisplay,digits=3))
   
@@ -208,7 +205,7 @@ N1000P500 <- Simu(N=1000,P=500,Table=DGP_style)
 #########################
 
 estim_names <- c("Naive Plug-In -- Balancing Lasso","Naive Plug-In -- Logit Lasso","Immunized -- Lasso",
-                 "Immunized -- Post-Lasso","BCH 2014","Farrell Lasso","Farrell Post-Lasso",
+                 "Immunized -- Post-Lasso","BCH 2014","Farrell -- Lasso","Farrell -- Post-Lasso",
                  "Oracle -- Balancing")
 nb_e = length(estim_names)
 

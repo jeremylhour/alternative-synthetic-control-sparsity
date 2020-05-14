@@ -2,7 +2,7 @@
 ### reports RMSE, bias and coverage rate, also parallelized
 ### Jeremy L'Hour
 ### 14/02/2020
-### Last edited: 13/03/2020
+### Last edited: 14/05/2020
 
 
 setwd("W:/1A_These/A. Research/beast_git/BEAST")
@@ -40,12 +40,12 @@ func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigm
 
 ### Monte Carlo Simulations -- setting up the function
 
-Simu <- function(N,P,R=10000,R2y=.8,R2d=.3,Table="base"){
+Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
   print(paste('--- Simulations start : R =',R,', n =',N,', p =',P,' ---'))
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
-  cl = makeCluster(20) #not to overload your computer
+  cl = makeCluster(10) #not to overload your computer
   registerDoParallel(cl)
   
   t_start <- Sys.time()
@@ -173,26 +173,30 @@ DGP_style = "newdgp" # modify here to generate each table
 
 set.seed(9081993)
 
-N500P50 <- Simu(N=500,P=50,Table=DGP_style)
-N500P100 <- Simu(N=500,P=100,Table=DGP_style)
-N500P200 <- Simu(N=500,P=200,Table=DGP_style)
-N500P500 <- Simu(N=500,P=500,Table=DGP_style)
-
-N200P50 <- Simu(N=200,P=50,Table=DGP_style)
-N200P100 <- Simu(N=200,P=100,Table=DGP_style)
-N200P200 <- Simu(N=200,P=200,Table=DGP_style)
-N200P500 <- Simu(N=200,P=500,Table=DGP_style)
-
-N100P50 <- Simu(N=100,P=50,Table=DGP_style)
-N100P100 <- Simu(N=100,P=100,Table=DGP_style)
-N100P200 <- Simu(N=100,P=200,Table=DGP_style)
-
+# P = 50
 N50P50 <- Simu(N=50,P=50,Table=DGP_style)
-N50P100 <- Simu(N=50,P=100,Table=DGP_style)
-
+N100P50 <- Simu(N=100,P=50,Table=DGP_style)
+N200P50 <- Simu(N=200,P=50,Table=DGP_style)
+N500P50 <- Simu(N=500,P=50,Table=DGP_style)
 N1000P50 <- Simu(N=1000,P=50,Table=DGP_style)
+
+# P = 100
+N50P100 <- Simu(N=50,P=100,Table=DGP_style)
+N100P100 <- Simu(N=100,P=100,Table=DGP_style)
+N200P100 <- Simu(N=200,P=100,Table=DGP_style)
+N500P100 <- Simu(N=500,P=100,Table=DGP_style)
 N1000P100 <- Simu(N=1000,P=100,Table=DGP_style)
+
+# P = 200
+N100P200 <- Simu(N=100,P=200,Table=DGP_style)
+N200P200 <- Simu(N=200,P=200,Table=DGP_style)
+N500P200 <- Simu(N=500,P=200,Table=DGP_style)
 N1000P200 <- Simu(N=1000,P=200,Table=DGP_style)
+
+
+# P = 500
+N200P500 <- Simu(N=200,P=500,Table=DGP_style) # Ne tourne pas
+N500P500 <- Simu(N=500,P=500,Table=DGP_style)
 N1000P500 <- Simu(N=1000,P=500,Table=DGP_style)
 
 
@@ -235,7 +239,7 @@ row.names(res) <- c(paste('n=50',estim_names),
                     paste('n=100',estim_names),
                     paste('n=200',estim_names),
                     paste('n=500',estim_names),
-                    paste('n=1000'),estim_names)
+                    paste('n=1000',estim_names))
 
 names(res) <- rep(c("RMSE","Bias","Cov. Rate"),4)
 
@@ -289,7 +293,7 @@ return_col <- function(x,shading='bleu',absolute=F){
 
 res_colored = res
 
-for(bloc in 1:4){
+for(bloc in 1:5){
   for(k in 1:ncol(res)){
     if(sum(is.na(res_colored[((bloc-1)*nb_e+1):(bloc*nb_e),k]))>0){
       next 

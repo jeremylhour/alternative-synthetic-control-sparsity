@@ -193,7 +193,6 @@ N200P200 <- Simu(N=200,P=200,Table=DGP_style)
 N500P200 <- Simu(N=500,P=200,Table=DGP_style)
 N1000P200 <- Simu(N=1000,P=200,Table=DGP_style)
 
-
 # P = 500
 N200P500 <- Simu(N=200,P=500,Table=DGP_style) # Ne tourne pas
 N500P500 <- Simu(N=500,P=500,Table=DGP_style)

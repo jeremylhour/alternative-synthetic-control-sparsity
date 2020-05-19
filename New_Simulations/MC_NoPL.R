@@ -42,17 +42,18 @@ func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigm
 
 ### Monte Carlo Simulations -- setting up the function
 
-Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
+Simu <- function(N,P,R=100,R2y=.8,R2d=.3,Table="base"){
   print(paste('--- Simulations start : R =',R,', n =',N,', p =',P,' ---'))
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
-  cl = makeCluster(8) #not to overload your computer
+  cl = makeCluster(20) #not to overload your computer
   registerDoParallel(cl)
   
   t_start <- Sys.time()
   
   resPAR <- foreach(r = 1:R,.export=func_liste,.packages=c('lbfgs','MASS'),.combine='rbind', .multicombine=TRUE, .errorhandling = 'remove') %dopar% {
+    set.seed(r);
     ### 0. Generate data
     if(Table=="newdgp"){
       data <- New_DataSim(n=N,p=P,Ry=R2y,Rd=R2d)
@@ -62,29 +63,31 @@ Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
     ATT <- data$ATT
     X=data$X; y=data$y; d=data$d
     
+    max_iter_penalty = 300 # can be important in term of computation time
+    
     ### 1. Compute Balancing parameter
-    CAL <- CalibrationLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
+    CAL <- CalibrationLasso(d,X,c=1.001,maxIterPen=max_iter_penalty,PostLasso=F,trace=F)
     
     ### 2. Computes the orthogonality parameter, using method WLS Lasso
     ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
                                   c=1.001, nopenset=c(1), RescaleY=F,
-                                  maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
+                                  maxIterPen=max_iter_penalty,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
     ### 3. Logit Lasso
-    LOGIT <- LogitLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=F,trace=F)
+    LOGIT <- LogitLasso(d,X,c=1.001,maxIterPen=max_iter_penalty,PostLasso=F,trace=F)
     
     ### 4bis. Orthogonality param for Farrell (2015)
     FARRELL <- OrthogonalityReg(y,d,X,LOGIT$betaLasso,method="LinearOutcome",
                                 c=1.001, nopenset=c(1), RescaleY=F,
-                                maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=T)
+                                maxIterPen=max_iter_penalty,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
     ### 5. BCH (2014) double post-selection
     BCH <- BCHDoubleSelec(y,d,X,cd=1.001,cy=1.001,
                           nopenset=c(1),RescaleY=F,
-                          maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
+                          maxIterPen=max_iter_penalty,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
     ### 6. Oracle
-    ORACLE <- CalibrationLasso(d,X[,c(1:11)],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
+    ORACLE <- CalibrationLasso(d,X[,c(1:11)],c=0,maxIterPen=max_iter_penalty,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
     Estimate <- c(Compute_ATT(y,d,X,CAL$betaLasso)$theta,
@@ -151,33 +154,21 @@ Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
 
 DGP_style = "newdgp" # modify here to generate each table
 
-set.seed(9081993)
-
 # P = 50
-N50P50 <- Simu(N=50,P=50,Table=DGP_style)
-N100P50 <- Simu(N=100,P=50,Table=DGP_style)
-N200P50 <- Simu(N=200,P=50,Table=DGP_style)
 N500P50 <- Simu(N=500,P=50,Table=DGP_style)
 N1000P50 <- Simu(N=1000,P=50,Table=DGP_style)
 
-# P = 100
-N50P100 <- Simu(N=50,P=100,Table=DGP_style)
-N100P100 <- Simu(N=100,P=100,Table=DGP_style)
-N200P100 <- Simu(N=200,P=100,Table=DGP_style)
-N500P100 <- Simu(N=500,P=100,Table=DGP_style)
-N1000P100 <- Simu(N=1000,P=100,Table=DGP_style)
-
 # P = 200
-N100P200 <- Simu(N=100,P=200,Table=DGP_style)
-N200P200 <- Simu(N=200,P=200,Table=DGP_style)
 N500P200 <- Simu(N=500,P=200,Table=DGP_style)
 N1000P200 <- Simu(N=1000,P=200,Table=DGP_style)
 
-
 # P = 500
-N200P500 <- Simu(N=200,P=500,Table=DGP_style) # Ne tourne pas
 N500P500 <- Simu(N=500,P=500,Table=DGP_style)
 N1000P500 <- Simu(N=1000,P=500,Table=DGP_style)
+
+# P = 1000
+N500P1000 <- Simu(N=500,P=1000,Table=DGP_style)
+N1000P1000 <- Simu(N=1000,P=1000,Table=DGP_style)
 
 
 #save.image("//ulysse/users/JL.HOUR/1A_These/sim_output")
@@ -195,30 +186,18 @@ nb_e = length(estim_names)
 
 res <- data.frame()
 
-res[1:(5*nb_e),1:3] <- rbind(N50P50$StatDisplay,
-                             N100P50$StatDisplay,
-                             N200P50$StatDisplay,
-                             N500P50$StatDisplay,
+res[1:(2*nb_e),1:3] <- rbind(N500P50$StatDisplay,
                              N1000P50$StatDisplay) # p = 50
-res[1:(5*nb_e),4:6] <- rbind(N50P100$StatDisplay,
-                             N100P100$StatDisplay,
-                             N200P100$StatDisplay,
-                             N500P100$StatDisplay,
-                             N1000P100$StatDisplay) # p = 100
-res[(nb_e+1):(5*nb_e),7:9] <- rbind(N100P200$StatDisplay,
-                                    N200P200$StatDisplay,
-                                    N500P200$StatDisplay,
-                                    N1000P200$StatDisplay) # p = 200
-res[(2*nb_e+1):(5*nb_e),10:12] <- rbind(N200P500$StatDisplay,
-                                        N500P500$StatDisplay,
-                                        N1000P500$StatDisplay) # p = 500
+res[1:(2*nb_e),4:6] <- rbind(N500P200$StatDisplay,
+                             N1000P200$StatDisplay) # p = 200
+res[1:(2*nb_e),7:9] <- rbind(N500P500$StatDisplay,
+                             N1000P500$StatDisplay) # p = 500
+res[1:(2*nb_e),10:12] <- rbind(N500P1000$StatDisplay,
+                               N1000P1000$StatDisplay) # p = 1000
 
 res <- round(res,digits=3)
 
-row.names(res) <- c(paste('n=50',estim_names),
-                    paste('n=100',estim_names),
-                    paste('n=200',estim_names),
-                    paste('n=500',estim_names),
+row.names(res) <- c(paste('n=500',estim_names),
                     paste('n=1000',estim_names))
 
 names(res) <- rep(c("RMSE","Bias","Cov. Rate"),4)

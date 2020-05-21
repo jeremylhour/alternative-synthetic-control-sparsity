@@ -43,12 +43,12 @@ func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigm
 
 ### Monte Carlo Simulations -- setting up the function
 
-Simu <- function(N,P,R=100,R2y=.8,R2d=.3,Table="base"){
+Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
   print(paste('--- Simulations start : R =',R,', n =',N,', p =',P,' ---'))
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
-  cl = makeCluster(7,setup_timeout=.5) #not to overload your computer
+  cl = makeCluster(20) #not to overload your computer
   registerDoParallel(cl)
   
   t_start <- Sys.time()

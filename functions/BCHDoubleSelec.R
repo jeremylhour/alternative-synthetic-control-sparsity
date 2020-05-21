@@ -43,7 +43,8 @@ BCHDoubleSelec <- function(y,d,X,cd=1.1,cy=1.1,
   ### First step: Selection on the Outcome Equation
   
   # Overall penalty level
-  g <- 20/sqrt(log(max(p,n)))
+  #g <- 20/sqrt(log(max(p,n)))
+  g = .05
   lambda <- cy*2*qnorm(1-.5*g/p)/sqrt(n)
   
   # Adjustment for rescaled program (only a numerical matter)

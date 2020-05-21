@@ -8,6 +8,7 @@
 
 
 setwd("W:/1A_These/A. Research/beast_git/BEAST")
+#setwd("/Users/jeremylhour/Documents/BEAST")
 rm(list=ls())
 
 
@@ -47,7 +48,7 @@ Simu <- function(N,P,R=100,R2y=.8,R2d=.3,Table="base"){
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
-  cl = makeCluster(20) #not to overload your computer
+  cl = makeCluster(7,setup_timeout=.5) #not to overload your computer
   registerDoParallel(cl)
   
   t_start <- Sys.time()

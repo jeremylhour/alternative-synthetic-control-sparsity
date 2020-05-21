@@ -48,7 +48,8 @@ OrthogonalityReg <- function(y,d,X,beta,method="WLSLasso",
   ### First step: Lasso
   
   # Overall penalty level
-  g <- 20/sqrt(log(max(p,n)))
+  #g <- 20/sqrt(log(max(p,n)))
+  g = .05
   lambda <- c*qnorm(1-.5*g/p)/sqrt(n)
   
   # Adjustment for rescaled program (only a numerical matter)

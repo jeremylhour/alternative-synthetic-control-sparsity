@@ -35,7 +35,8 @@ CalibrationLasso <- function(d,X,c=1.1,maxIterPen=100,PostLasso=F,trace=F){
   
   # Overall penalty level
   if(c > 0){
-    g = 20/sqrt(log(max(p,n)))
+    #g = 20/sqrt(log(max(p,n)))
+    g = .05
     lambda = c*qnorm(1-.5*g/p)/sqrt(n)
   } else {
     lambda = 0

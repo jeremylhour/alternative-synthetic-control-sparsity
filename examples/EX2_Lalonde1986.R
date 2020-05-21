@@ -15,7 +15,6 @@ set.seed(9081993)
 
 ### 0. Settings
 ### Load packages
-library("plyr")
 library("ggplot2")
 library("lbfgs")
 library("causalsens")

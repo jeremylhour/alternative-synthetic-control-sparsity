@@ -39,7 +39,8 @@ LogitLasso <- function(d,X,c=1.1,
   ### First step: Lasso
   
   # Overall penalty level
-  g <- 20/sqrt(log(max(p,n)))
+  #g <- 20/sqrt(log(max(p,n)))
+  g = .05
   lambda <- c*qnorm(1-.5*g/p)/sqrt(n)
   
   # Penalty loadings: get a preliminary estimator

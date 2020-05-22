@@ -158,19 +158,22 @@ DGP_style = "newdgp" # modify here to generate each table
 # P = 50
 N500P50 <- Simu(N=500,P=50,Table=DGP_style)
 N1000P50 <- Simu(N=1000,P=50,Table=DGP_style)
+N2000P50 <- Simu(N=2000,P=50,Table=DGP_style)
 
 # P = 200
 N500P200 <- Simu(N=500,P=200,Table=DGP_style)
 N1000P200 <- Simu(N=1000,P=200,Table=DGP_style)
+N2000P200 <- Simu(N=2000,P=200,Table=DGP_style)
 
 # P = 500
 N500P500 <- Simu(N=500,P=500,Table=DGP_style)
 N1000P500 <- Simu(N=1000,P=500,Table=DGP_style)
+N2000P500 <- Simu(N=2000,P=500,Table=DGP_style)
 
 # P = 1000
 N500P1000 <- Simu(N=500,P=1000,Table=DGP_style)
 N1000P1000 <- Simu(N=1000,P=1000,Table=DGP_style)
-
+N2000P1000 <- Simu(N=2000,P=1000,Table=DGP_style)
 
 #save.image("//ulysse/users/JL.HOUR/1A_These/sim_output")
 
@@ -187,19 +190,24 @@ nb_e = length(estim_names)
 
 res <- data.frame()
 
-res[1:(2*nb_e),1:3] <- rbind(N500P50$StatDisplay,
-                             N1000P50$StatDisplay) # p = 50
-res[1:(2*nb_e),4:6] <- rbind(N500P200$StatDisplay,
-                             N1000P200$StatDisplay) # p = 200
-res[1:(2*nb_e),7:9] <- rbind(N500P500$StatDisplay,
-                             N1000P500$StatDisplay) # p = 500
-res[1:(2*nb_e),10:12] <- rbind(N500P1000$StatDisplay,
-                               N1000P1000$StatDisplay) # p = 1000
+res[1:(3*nb_e),1:3] <- rbind(N500P50$StatDisplay,
+                             N1000P50$StatDisplay,
+                             N2000P50$StatDisplay) # p = 50
+res[1:(3*nb_e),4:6] <- rbind(N500P200$StatDisplay,
+                             N1000P200$StatDisplay,
+                             N2000P200$StatDisplay) # p = 200
+res[1:(3*nb_e),7:9] <- rbind(N500P500$StatDisplay,
+                             N1000P500$StatDisplay,
+                             N2000P500$StatDisplay) # p = 500
+res[1:(3*nb_e),10:12] <- rbind(N500P1000$StatDisplay,
+                               N1000P1000$StatDisplay,
+                               N2000P1000$StatDisplay) # p = 1000
 
 res <- round(res,digits=3)
 
 row.names(res) <- c(paste('n=500',estim_names),
-                    paste('n=1000',estim_names))
+                    paste('n=1000',estim_names),
+                    paste('n=2000',estim_names))
 
 names(res) <- rep(c("RMSE","Bias","Cov. Rate"),4)
 

@@ -5,7 +5,7 @@
 ### Last edited: 14/05/2020
 
 
-setwd("W:/1A_These/A. Research/beast_git/BEAST")
+setwd("/home/rstudio/alternative-synthetic-control-sparsity/")
 rm(list=ls())
 
 
@@ -16,10 +16,9 @@ rm(list=ls())
 ##############################
 
 ### Load packages
-library("MASS")
-library("foreach")
-library("doParallel")
-library('lbfgs')
+package_list = c("MASS", "foreach", "doParallel", "lbfgs")
+for(pack in package_list) install.packages(pack)
+lapply(package_list, require, character.only = TRUE)
 
 ### Load user-defined functions
 source("functions/DataSim.R") 
@@ -48,79 +47,78 @@ Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
   cl = makeCluster(10) #not to overload your computer
   registerDoParallel(cl)
   
-  t_start <- Sys.time()
+  t_start = Sys.time()
   
-  resPAR <- foreach(r = 1:R,.export=func_liste,.packages=c('lbfgs','MASS'),.combine='rbind', .multicombine=TRUE, .errorhandling = 'remove') %dopar% {
+  resPAR = foreach(r = 1:R,.export=func_liste,.packages=c('lbfgs','MASS'),.combine='rbind', .multicombine=TRUE, .errorhandling = 'remove') %dopar% {
     ### 0. Generate data
     ATT = 0
     if(Table=="base"){
-      data <- DataSim(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
+      data = DataSim(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
     } else if(Table=="noX") {
-      data <- DataSim_noX(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
+      data = DataSim_noX(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
     } else if(Table=="heterogeneous"){
-      data <- DataSim(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=T)
+      data = DataSim(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=T)
     } else if(Table=="interaction"){
-      data <- DataSim_interaction(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
+      data = DataSim_interaction(n=N,p=P,Ry=R2y,Rd=R2d,TreatHeter=F)
     } else if(Table=="newdgp"){
-      data <- New_DataSim(n=N,p=P,Ry=R2y,Rd=R2d)
-      ATT <- data$ATT
+      data = New_DataSim(n=N,p=P,Ry=R2y,Rd=R2d)
+      ATT = data$ATT
     } else if(Table=="newdgp2"){
-      data <- DataSim_New2(n=N,p=P,Ry=R2y,Rd=R2d)
-      ATT <- data$ATT
+      data = DataSim_New2(n=N,p=P,Ry=R2y,Rd=R2d)
+      ATT = data$ATT
     }
     
     X=data$X; y=data$y; d=data$d
     
     ### 1. Compute Balancing parameter
-    CAL <- CalibrationLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
+    CAL = CalibrationLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 2. Computes the orthogonality parameter, using method WLS Lasso
-    ORT_WLS_L <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
+    ORT_WLS_L = OrthogonalityReg(y,d,X,CAL$betaLasso,method="WLSLasso",
                                            c=1.001, nopenset=c(1), RescaleY=F,
                                            maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=F,trace=F)
     
     ### 2bis. Computes the orthogonality parameter, using method WLS Post-Lasso
-    ORT_WLS_PL <- OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
+    ORT_WLS_PL = OrthogonalityReg(y,d,X,CAL$betaPL,method="WLSLasso",
                                   c=1.001, nopenset=c(1), RescaleY=F,
                                   maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=F)
     
     ### 3. Logit Lasso
-    LOGIT <- LogitLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
+    LOGIT = LogitLasso(d,X,c=1.001,maxIterPen=5e1,PostLasso=T,trace=F)
     
     ### 4bis. Orthogonality param for Farrell (2015)
-    FARRELL <- OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
+    FARRELL = OrthogonalityReg(y,d,X,CAL$betaLasso,method="LinearOutcome",
                                 c=1.001, nopenset=c(1), RescaleY=F,
                                 maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,PostLasso=T,trace=T)
     
     ### 5. BCH (2014) double post-selection
-    BCH <- BCHDoubleSelec(y,d,X,cd=1.001,cy=1.001,
+    BCH = BCHDoubleSelec(y,d,X,cd=1.001,cy=1.001,
                           nopenset=c(1),RescaleY=F,
                           maxIterPen=1e4,maxIterLasso=1e4,tolLasso=1e-6,trace=F)
     
     ### 6. Oracle
-    ORACLE <- CalibrationLasso(d,X[,c(1:11)],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
+    ORACLE = CalibrationLasso(d,X[,c(1:11)],c=0,maxIterPen=5e1,PostLasso=F,trace=F)
     
     ### 7. Third step: ATT estimation
-    Estimate <- c(Compute_ATT(y,d,X,CAL$betaLasso)$theta,
-                  Compute_ATT(y,d,X,LOGIT$betaLasso)$theta,
-                  Compute_ATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso)$theta,
-                  Compute_ATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL)$theta,
-                  BCH$theta,
-                  Compute_ATT(y,d,X,LOGIT$betaLasso,FARRELL$muLasso)$theta,
-                  Compute_ATT(y,d,X,LOGIT$betaPL,FARRELL$muPL)$theta,
-                  Compute_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$theta)
+    Estimate = c(Compute_ATT(y,d,X,CAL$betaLasso)$theta,
+                Compute_ATT(y,d,X,LOGIT$betaLasso)$theta,
+                Compute_ATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso)$theta,
+                Compute_ATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL)$theta,
+                BCH$theta,
+                Compute_ATT(y,d,X,LOGIT$betaLasso,FARRELL$muLasso)$theta,
+                Compute_ATT(y,d,X,LOGIT$betaPL,FARRELL$muPL)$theta,
+                Compute_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$theta)
     
-    AsySD <- c(Compute_ATT(y,d,X,CAL$betaLasso)$sigma,
-               Compute_ATT(y,d,X,LOGIT$betaLasso)$sigma,
-               Compute_ATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso)$sigma,
-               Compute_ATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL)$sigma,
-               BCH$sigma,
-               Compute_ATT(y,d,X,LOGIT$betaLasso,FARRELL$muLasso)$sigma,
-               Compute_ATT(y,d,X,LOGIT$betaPL,FARRELL$muPL)$sigma,
-               Compute_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$sigma)
+    AsySD = c(Compute_ATT(y,d,X,CAL$betaLasso)$sigma,
+              Compute_ATT(y,d,X,LOGIT$betaLasso)$sigma,
+              Compute_ATT(y,d,X,CAL$betaLasso,ORT_WLS_L$muLasso)$sigma,
+              Compute_ATT(y,d,X,CAL$betaPL,ORT_WLS_PL$muPL)$sigma,
+              BCH$sigma,
+              Compute_ATT(y,d,X,LOGIT$betaLasso,FARRELL$muLasso)$sigma,
+              Compute_ATT(y,d,X,LOGIT$betaPL,FARRELL$muPL)$sigma,
+              Compute_ATT(y,d,X[,c(1:11)],ORACLE$betaLasso)$sigma)
     
-    Convergence <- c(CAL$convergence,
-                     ORT_WLS_L$convergence)
+    Convergence = c(CAL$convergence, ORT_WLS_L$convergence)
     
     c(Estimate,AsySD,Convergence,ATT)
   }

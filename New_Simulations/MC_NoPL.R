@@ -7,8 +7,7 @@
 ### NO POST-LASSO
 
 
-setwd("W:/1A_These/A. Research/beast_git/BEAST")
-#setwd("/Users/jeremylhour/Documents/BEAST")
+setwd("/home/rstudio/alternative-synthetic-control-sparsity/")
 rm(list=ls())
 
 
@@ -60,7 +59,7 @@ Simu <- function(N, P, R=1000, R2y=.8, R2d=.3, Table="base"){
       data = New_DataSim(n=N,p=P,Ry=R2y,Rd=R2d)
     } else if(Table=="newdgp2"){
       data = DataSim_New2(n=N,p=P,Ry=R2y,Rd=R2d)
-    } else if(Table=="newdgp2"){
+    } else if(Table=="test"){
       data = TestDataSim(n=N,p=P,Ry=R2y,Rd=R2d)
     }
     ATT <- data$ATT

@@ -66,4 +66,4 @@ TestDataSim <- function(n=2000, p=50, Ry=.5, Rd=.2, Intercept=T, rho=.5){
               ATT=ATT))
 }
 
-link_func = function(x) x^2/(1+x^2)
+link_func = function(x) pmax(x,0)^2/(1+pmax(x,0)^2)

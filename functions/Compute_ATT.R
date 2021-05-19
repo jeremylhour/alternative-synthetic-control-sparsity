@@ -28,7 +28,7 @@ Compute_ATT <- function(y,d,X,beta,mu){
     untreated_reg = lm(y ~ X[,S_hat] - 1, weights=(1-d)*exp(X%*%beta))
     mu = coef(untreated_reg)
     mu[is.na(mu)] = 0
-    eps = y - X[,S_hat]%*%mu
+    eps = y - X[,S_hat]%*%as.matrix(mu)
   } else {
     eps = y - X%*%mu
     theta = mean((d - (1-d)*exp(X%*%beta)) * eps)  / pi # immunized

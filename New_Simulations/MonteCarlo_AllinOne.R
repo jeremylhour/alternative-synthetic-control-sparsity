@@ -17,7 +17,7 @@ rm(list=ls())
 
 ### Load packages
 package_list = c("MASS", "foreach", "doParallel", "lbfgs")
-for(pack in package_list) install.packages(pack)
+#for(pack in package_list) install.packages(pack)
 lapply(package_list, require, character.only = TRUE)
 
 ### Load user-defined functions
@@ -26,6 +26,7 @@ source("functions/New_DataSim.R")
 source("functions/DataSim_New2.R") 
 source("functions/DataSim_noX.R") 
 source("functions/DataSim_interaction.R")
+source("functions/TestDataSim.R")
 source("functions/LassoFISTA.R") 
 source("functions/CalibrationLasso.R")
 source("functions/OrthogonalityReg.R")
@@ -33,18 +34,18 @@ source("functions/LogitLasso.R")
 source("functions/BCHDoubleSelec.R")
 source("functions/Compute_ATT.R")
 
-func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigmoid', 'DataSim_New2',
+func_liste = c('DataSim','DataSim_noX','DataSim_interaction','New_DataSim','sigmoid', 'DataSim_New2', 'TestDataSim',
                'LassoFISTA','CalibrationLasso','OrthogonalityReg','LogitLasso','BCHDoubleSelec','Compute_ATT',
-               'gamma','gammagrad','prox','LeastSq','LeastSqgrad','LassoObj','Logitloss','Logitlossgrad','sigmoid') # list of functions for running parallel loop
+               'gamma','gammagrad','prox','LeastSq','LeastSqgrad','LassoObj','Logitloss','Logitlossgrad','sigmoid', 'link_func') # list of functions for running parallel loop
 
 ### Monte Carlo Simulations -- setting up the function
 
-Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
+Simu <- function(N, P, R=1000, R2y=.8, R2d=.3, Table="base"){
   print(paste('--- Simulations start : R =',R,', n =',N,', p =',P,' ---'))
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
-  cl = makeCluster(10) #not to overload your computer
+  cl = makeCluster(7, outfile="",setup_timeout=.5) #not to overload your computer
   registerDoParallel(cl)
   
   t_start = Sys.time()
@@ -65,6 +66,9 @@ Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
       ATT = data$ATT
     } else if(Table=="newdgp2"){
       data = DataSim_New2(n=N,p=P,Ry=R2y,Rd=R2d)
+      ATT = data$ATT
+    } else if(Table=="test"){
+      data = TestDataSim(n=N,p=P,Ry=R2y,Rd=R2d)
       ATT = data$ATT
     }
     
@@ -167,7 +171,7 @@ Simu <- function(N,P,R=1000,R2y=.8,R2d=.3,Table="base"){
 ###########################
 ###########################
 
-DGP_style = "newdgp" # modify here to generate each table
+DGP_style = "test" # modify here to generate each table
 
 set.seed(9081993)
 

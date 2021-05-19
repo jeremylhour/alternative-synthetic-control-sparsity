@@ -48,7 +48,7 @@ Simu <- function(N, P, R=1000, R2y=.8, R2d=.3, Table="base"){
   print(paste('--- DGP style :',Table,' ---'))
   ## STEP A. SIMULATIONS
   cores = detectCores()
-  cl = makeCluster(7) #not to overload your computer
+  cl = makeCluster(7, outfile="",setup_timeout=.5) #not to overload your computer
   registerDoParallel(cl)
   
   t_start <- Sys.time()
